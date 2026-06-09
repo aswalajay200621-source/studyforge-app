@@ -10,6 +10,8 @@ import {
   CheckCircle2,
   Target,
   File,
+  Plus,
+  Trash2,
 } from "lucide-react";
 import Link from "next/link";
 import { populateDefaultData } from "@/lib/generator";
@@ -29,21 +31,34 @@ const stagger = {
   },
 };
 
+const GOALS_STORAGE_KEY = "studyforge_daily_goals";
+
+function loadGoals(): { text: string; done: boolean }[] {
+  try {
+    const stored = localStorage.getItem(GOALS_STORAGE_KEY);
+    if (stored) return JSON.parse(stored);
+  } catch {}
+  return [];
+}
+
+function saveGoals(goals: { text: string; done: boolean }[]) {
+  localStorage.setItem(GOALS_STORAGE_KEY, JSON.stringify(goals));
+}
+
 export default function DashboardPage() {
   const [uploads, setUploads] = useState<any[]>([]);
   const [subjects, setSubjects] = useState<any[]>([]);
   const [recentActivity, setRecentActivity] = useState<any[]>([]);
-  const [goals, setGoals] = useState([
-    { text: "Review Biology Chapter 5", done: true },
-    { text: "Complete 30 flashcards", done: true },
-    { text: "Take Chemistry quiz", done: false },
-    { text: "Read Physics notes", done: false },
-    { text: "Study for 2 hours", done: false },
-  ]);
+  const [goals, setGoals] = useState<{ text: string; done: boolean }[]>([]);
+  const [newGoalText, setNewGoalText] = useState("");
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     // Populate initial default data if empty
     populateDefaultData();
+    // Load goals from localStorage
+    setGoals(loadGoals());
 
     // Read from localStorage
     const storedUploads = localStorage.getItem("studyforge_uploads");
@@ -102,6 +117,21 @@ export default function DashboardPage() {
     const updatedGoals = [...goals];
     updatedGoals[index].done = !updatedGoals[index].done;
     setGoals(updatedGoals);
+    saveGoals(updatedGoals);
+  };
+
+  const addGoal = () => {
+    if (!newGoalText.trim()) return;
+    const updatedGoals = [...goals, { text: newGoalText.trim(), done: false }];
+    setGoals(updatedGoals);
+    saveGoals(updatedGoals);
+    setNewGoalText("");
+  };
+
+  const deleteGoal = (index: number) => {
+    const updatedGoals = goals.filter((_, i) => i !== index);
+    setGoals(updatedGoals);
+    saveGoals(updatedGoals);
   };
 
   const completedGoals = goals.filter((g) => g.done).length;
@@ -144,49 +174,101 @@ export default function DashboardPage() {
       {/* Today's Goals */}
       <div className="grid grid-cols-1 gap-6">
         <motion.div variants={stagger.item} className="glass rounded-xl p-5">
-          <div className="flex items-center justify-between mb-5">
+          <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-bold" style={{ fontFamily: "var(--font-outfit)", color: "var(--foreground)" }}>
               Today&apos;s Goals
             </h2>
             <Target className="w-4 h-4" style={{ color: "var(--forge-indigo)" }} />
           </div>
-          <div className="space-y-3">
-            {goals.map((goal, i) => (
-              <div
-                key={i}
-                onClick={() => toggleGoal(i)}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors cursor-pointer ${
-                  goal.done ? "opacity-60" : ""
-                }`}
-                style={{ background: goal.done ? "transparent" : "var(--surface)" }}
-              >
-                <CheckCircle2
-                  className={`w-[18px] h-[18px] shrink-0 ${
-                    goal.done ? "text-emerald-500" : ""
+
+          {/* Add new goal input */}
+          <div className="flex items-center gap-2 mb-4">
+            <input
+              type="text"
+              value={newGoalText}
+              onChange={(e) => setNewGoalText(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && addGoal()}
+              placeholder="Add a new goal..."
+              maxLength={80}
+              className="flex-1 px-3 py-2 rounded-lg text-sm outline-none transition-all focus:ring-2 focus:ring-[var(--forge-indigo)]"
+              style={{
+                background: "var(--surface)",
+                color: "var(--foreground)",
+                border: "1px solid var(--border)",
+              }}
+              id="new-goal-input"
+            />
+            <button
+              onClick={addGoal}
+              disabled={!newGoalText.trim()}
+              className="p-2 rounded-lg text-white transition-all hover:scale-105 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
+              style={{
+                background: "linear-gradient(135deg, var(--forge-indigo), var(--forge-violet))",
+              }}
+              id="add-goal-btn"
+            >
+              <Plus className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Goals list */}
+          {mounted && goals.length === 0 ? (
+            <p className="text-sm text-center py-8" style={{ color: "var(--foreground-muted)" }}>
+              No goals yet. Add your first goal above! 🎯
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {goals.map((goal, i) => (
+                <div
+                  key={i}
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors group ${
+                    goal.done ? "opacity-60" : ""
                   }`}
-                  style={!goal.done ? { color: "var(--foreground-muted)" } : {}}
-                />
-                <span
-                  className={`text-sm ${goal.done ? "line-through" : "font-medium"}`}
-                  style={{ color: goal.done ? "var(--foreground-muted)" : "var(--foreground)" }}
+                  style={{ background: goal.done ? "transparent" : "var(--surface)" }}
                 >
-                  {goal.text}
-                </span>
+                  <button onClick={() => toggleGoal(i)} className="shrink-0">
+                    <CheckCircle2
+                      className={`w-[18px] h-[18px] ${
+                        goal.done ? "text-emerald-500" : ""
+                      } transition-colors`}
+                      style={!goal.done ? { color: "var(--foreground-muted)" } : {}}
+                    />
+                  </button>
+                  <span
+                    className={`flex-1 text-sm cursor-pointer ${goal.done ? "line-through" : "font-medium"}`}
+                    style={{ color: goal.done ? "var(--foreground-muted)" : "var(--foreground)" }}
+                    onClick={() => toggleGoal(i)}
+                  >
+                    {goal.text}
+                  </span>
+                  <button
+                    onClick={() => deleteGoal(i)}
+                    className="shrink-0 p-1 rounded-md opacity-0 group-hover:opacity-100 hover:bg-red-500/10 transition-all"
+                    style={{ color: "#EF4444" }}
+                    title="Delete goal"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Progress bar */}
+          {goals.length > 0 && (
+            <div className="mt-4 pt-4 border-t" style={{ borderColor: "var(--border)" }}>
+              <div className="flex items-center justify-between text-sm">
+                <span style={{ color: "var(--foreground-muted)" }}>Progress</span>
+                <span className="font-semibold text-emerald-500">{completedGoals}/{goals.length} completed</span>
               </div>
-            ))}
-          </div>
-          <div className="mt-4 pt-4 border-t" style={{ borderColor: "var(--border)" }}>
-            <div className="flex items-center justify-between text-sm">
-              <span style={{ color: "var(--foreground-muted)" }}>Progress</span>
-              <span className="font-semibold text-emerald-500">{completedGoals}/{goals.length} completed</span>
+              <div className="w-full h-2 rounded-full mt-2" style={{ background: "var(--surface)" }}>
+                <div 
+                  className="h-full rounded-full bg-emerald-500 transition-all duration-300" 
+                  style={{ width: `${(completedGoals / goals.length) * 100}%` }}
+                />
+              </div>
             </div>
-            <div className="w-full h-2 rounded-full mt-2" style={{ background: "var(--surface)" }}>
-              <div 
-                className="h-full rounded-full bg-emerald-500 transition-all duration-300" 
-                style={{ width: `${(completedGoals / goals.length) * 100}%` }}
-              />
-            </div>
-          </div>
+          )}
         </motion.div>
       </div>
 
