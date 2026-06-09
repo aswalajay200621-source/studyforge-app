@@ -186,8 +186,8 @@ export default function ExamCountdown() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 6, scale: 0.95 }}
             transition={{ duration: 0.18 }}
-            className="absolute right-0 top-full mt-3 w-80 rounded-2xl glass shadow-lg z-[100] overflow-hidden"
-            style={{ border: "1px solid var(--border-strong)" }}
+            className="absolute right-0 top-full mt-3 w-80 rounded-2xl shadow-lg z-[100] overflow-hidden"
+            style={{ background: "var(--background-secondary)", border: "1px solid var(--border-strong)", boxShadow: "0 8px 32px rgba(0,0,0,0.4)" }}
             id="exam-countdown-popover"
           >
             {/* Header */}
