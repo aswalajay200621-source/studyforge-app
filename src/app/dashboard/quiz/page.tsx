@@ -150,7 +150,7 @@ export default function QuizPage() {
           </h2>
 
           <div className="space-y-3 mt-auto mb-8">
-            {question.options.map((opt) => {
+            {question.options.map((opt: { id: string; text: string }) => {
               const isSelected = selectedOption === opt.id;
               const isCorrect = isAnswered && opt.id === question.correctId;
               const isWrong = isAnswered && isSelected && opt.id !== question.correctId;
