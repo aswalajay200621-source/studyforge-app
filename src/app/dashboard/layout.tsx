@@ -35,10 +35,6 @@ const sidebarLinks = [
   { href: "/dashboard/flashcards", icon: Layers, label: "Flashcards" },
   { href: "/dashboard/quiz", icon: Brain, label: "Quizzes" },
   { href: "/dashboard/upload", icon: Upload, label: "Upload PDF" },
-  { href: "/dashboard/progress", icon: BarChart3, label: "Progress" },
-  { href: "/dashboard/bookmarks", icon: Bookmark, label: "Bookmarks" },
-  { href: "/dashboard/planner", icon: Target, label: "Study Planner" },
-  { href: "/dashboard/pomodoro", icon: Clock, label: "Pomodoro" },
 ];
 
 const bottomLinks = [
