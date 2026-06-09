@@ -8,6 +8,8 @@ export interface Note {
   words: number;
   date: string;
   htmlContent: string;
+  textContent?: string;
+  isTextbook?: boolean;
 }
 
 export interface Flashcard {
@@ -1202,6 +1204,7 @@ export function generateStudyMaterials(fileName: string, fileSizeStr: string) {
 
   // Generate dynamic HTML content
   const htmlContent = generateHtmlContent(cleanTitle, subject, color, dateStr);
+  const textContent = convertHtmlToText(htmlContent);
 
   // Generate finalized objects
   const noteId = Math.random().toString(36).substring(2, 9);
@@ -1214,7 +1217,8 @@ export function generateStudyMaterials(fileName: string, fileSizeStr: string) {
     preview: notesPreview,
     words: notesWords,
     date: dateStr,
-    htmlContent
+    htmlContent,
+    textContent
   };
 
   const deckId = Math.floor(Math.random() * 10000);
@@ -1282,4 +1286,325 @@ export function populateDefaultData() {
     localStorage.setItem("studyforge_quizzes", JSON.stringify([materials.quiz]));
     localStorage.setItem("studyforge_questions", JSON.stringify(materials.questions));
   }
+}
+
+// Dynamic converter from HTML study guides to plain text
+export function convertHtmlToText(htmlContent: string): string {
+  if (typeof window === "undefined") return "";
+  try {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(htmlContent, "text/html");
+    
+    // Remove style, script, and link elements
+    doc.querySelectorAll("style, script, link").forEach(el => el.remove());
+    
+    const title = doc.querySelector("h1, h2, h3")?.textContent?.trim() || "Study Notes";
+    let text = `📚 STUDY NOTES — ${title.toUpperCase()}\n`;
+    text += `Generated from HTML Guide\n`;
+    text += `═`.repeat(60) + "\n\n";
+    
+    // Select all chapters or sections
+    const chapters = doc.querySelectorAll(".chapter, .section, [id^='ch']");
+    if (chapters.length > 0) {
+      chapters.forEach((ch, idx) => {
+        const tag = ch.querySelector(".chapter-tag, .section-tag")?.textContent?.trim() || `SECTION ${idx + 1}`;
+        const title = ch.querySelector("h3, h4")?.textContent?.trim() || "Core Concepts";
+        text += `\n${tag} — ${title.toUpperCase()}\n`;
+        text += `─`.repeat(40) + "\n";
+        
+        const elements = ch.querySelectorAll("p, h4, h5, h6, table, .callout, .analogy, .step-item");
+        elements.forEach(el => {
+          if (el.tagName === "H4" || el.tagName === "H5" || el.tagName === "H6") {
+            text += `\n▶ ${el.textContent?.trim().toUpperCase()}\n`;
+          } else if (el.classList.contains("callout") || el.classList.contains("analogy")) {
+            const label = el.querySelector(".callout-label, .analogy-label")?.textContent?.trim() || "Highlight";
+            const pText = el.querySelector("p")?.textContent?.trim() || el.textContent?.trim() || "";
+            text += `\n📌 [${label}]: ${pText}\n`;
+          } else if (el.classList.contains("step-item")) {
+            const num = el.querySelector(".step-num")?.textContent?.trim() || "•";
+            const desc = el.querySelector(".step-content")?.textContent?.trim() || el.textContent?.trim() || "";
+            text += `  • [${num}] ${desc.replace(/\s+/g, " ")}\n`;
+          } else if (el.tagName === "TABLE") {
+            text += "\n[Comparison Matrix]:\n";
+            el.querySelectorAll("tr").forEach(row => {
+              const cells = Array.from(row.querySelectorAll("th, td")).map(c => c.textContent?.trim() || "");
+              if (cells.length > 0) {
+                text += `  | ${cells.join(" | ")} |\n`;
+              }
+            });
+            text += "\n";
+          } else if (el.tagName === "P" && !el.closest(".callout") && !el.closest(".analogy") && !el.closest(".step-item")) {
+            text += `  ${el.textContent?.trim()}\n\n`;
+          }
+        });
+        text += "\n" + `═`.repeat(60) + "\n\n";
+      });
+    } else {
+      // General fallback extraction
+      const bodyText = doc.body.textContent || "";
+      text += bodyText.split("\n").map(l => l.trim()).filter(l => l).join("\n");
+    }
+    
+    return text.replace(/\n{3,}/g, "\n\n").trim();
+  } catch (err) {
+    console.error("Extraction error:", err);
+    return "Failed to extract plain text notes from HTML guide.";
+  }
+}
+
+// Dynamic converter from plain text notes to premium styled HTML
+export function convertTextToHtml(title: string, textContent: string, subject: string, color: string): string {
+  const lines = textContent.split("\n");
+  let htmlBody = "";
+  let currentChapter: { title: string; tag: string; content: string[] } | null = null;
+  const chapters: Array<{ title: string; tag: string; content: string[] }> = [];
+  
+  let index = 0;
+  while (index < lines.length) {
+    const line = lines[index].trim();
+    
+    if (line.startsWith("CHAPTER") || (line.toUpperCase().includes("CHAPTER") && lines[index+1]?.includes("──"))) {
+      if (currentChapter) {
+        chapters.push(currentChapter);
+      }
+      
+      const parts = line.split("—");
+      const tag = parts[0]?.trim() || "CH";
+      const chTitle = parts[1]?.trim() || "Concepts";
+      
+      currentChapter = {
+        tag,
+        title: chTitle,
+        content: []
+      };
+      
+      if (lines[index+1]?.includes("──")) {
+        index++;
+      }
+    } else if (line) {
+      if (currentChapter) {
+        currentChapter.content.push(lines[index]);
+      } else {
+        if (!line.startsWith("📚") && !line.startsWith("---") && !line.includes("Subject:")) {
+          htmlBody += `<p class="intro-p" style="color: var(--text-muted); font-size: 15px; margin-bottom: 1rem;">${line}</p>`;
+        }
+      }
+    }
+    index++;
+  }
+  if (currentChapter) {
+    chapters.push(currentChapter);
+  }
+  
+  if (chapters.length === 0) {
+    htmlBody += `
+      <div class="chapter">
+        <div class="chapter-header">
+          <span class="chapter-tag">NOTES</span>
+          <h3>${title}</h3>
+        </div>
+        <div class="prose">
+          <pre style="white-space: pre-wrap; font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--text-muted); line-height: 1.8; background: var(--surface); padding: 1.5rem; border-radius: 4px; border: 1px solid var(--border-bright);">${textContent}</pre>
+        </div>
+      </div>
+    `;
+  } else {
+    chapters.forEach(ch => {
+      let chHtml = `
+        <div class="chapter">
+          <div class="chapter-header">
+            <span class="chapter-tag">${ch.tag}</span>
+            <h3>${ch.title}</h3>
+          </div>
+          <div class="prose">
+      `;
+      
+      let inList = false;
+      let inCallout = false;
+      
+      ch.content.forEach(cLine => {
+        const trimmed = cLine.trim();
+        if (!trimmed) return;
+        
+        if (trimmed.startsWith("▶")) {
+          if (inList) { chHtml += `</ul>`; inList = false; }
+          if (inCallout) { chHtml += `</div>`; inCallout = false; }
+          chHtml += `<h4>${trimmed.substring(1).trim()}</h4>`;
+        } else if (trimmed.startsWith("•") || trimmed.startsWith("-")) {
+          if (inCallout) { chHtml += `</div>`; inCallout = false; }
+          if (!inList) { chHtml += `<ul class="notes-list">`; inList = true; }
+          chHtml += `<li>${trimmed.substring(1).trim()}</li>`;
+        } else if (/^\d+\./.test(trimmed)) {
+          if (inList) { chHtml += `</ul>`; inList = false; }
+          if (inCallout) { chHtml += `</div>`; inCallout = false; }
+          const match = trimmed.match(/^(\d+)\.(.*)/);
+          if (match) {
+            chHtml += `
+              <div class="step-item" style="display: flex; gap: 1rem; margin-bottom: 0.75rem;">
+                <span class="step-num" style="font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--sky); font-weight: 600;">0${match[1]}</span>
+                <div class="step-content"><p style="font-size: 14px; color: var(--text-muted); margin: 0;">${match[2].trim()}</p></div>
+              </div>
+            `;
+          }
+        } else if (trimmed.startsWith("📌") || trimmed.startsWith("★")) {
+          if (inList) { chHtml += `</ul>`; inList = false; }
+          if (inCallout) { chHtml += `</div>`; inCallout = false; }
+          chHtml += `
+            <div class="callout" style="border: 1px solid var(--border-bright); border-left: 3px solid var(--sky); background: var(--surface); padding: 1.25rem 1.5rem; margin: 1.75rem 0; border-radius: 0 4px 4px 0;">
+              <div class="callout-label" style="font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase; color: var(--sky); margin-bottom: 0.5rem;">Study Tip</div>
+              <p style="margin: 0; font-size: 14px; color: var(--text-muted);">${trimmed.substring(1).trim()}</p>
+            </div>
+          `;
+        } else {
+          if (inList) { chHtml += `</ul>`; inList = false; }
+          if (inCallout) { chHtml += `</div>`; inCallout = false; }
+          chHtml += `<p style="color: var(--text-muted); margin-bottom: 1.25rem; font-size: 15px;">${trimmed}</p>`;
+        }
+      });
+      
+      if (inList) chHtml += `</ul>`;
+      if (inCallout) chHtml += `</div>`;
+      
+      chHtml += `
+          </div>
+        </div>
+      `;
+      htmlBody += chHtml;
+    });
+  }
+  
+  return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${title}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #070A13;
+      --surface: #0E1326;
+      --surface2: #131A33;
+      --border: rgba(255,255,255,0.06);
+      --border-bright: rgba(255,255,255,0.12);
+      --white: #FFFFFF;
+      --text: #E2E8F0;
+      --text-muted: #94A3B8;
+      --text-dim: #64748B;
+      --sky: ${color};
+      --sky-glow: ${color}22;
+      --sky-glow2: ${color}0D;
+    }
+    
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      line-height: 1.6;
+    }
+    
+    .hero {
+      text-align: center;
+      padding: 5rem 2rem 4rem;
+      border-bottom: 1px solid var(--border);
+      background: radial-gradient(circle at top, var(--sky-glow) 0%, transparent 60%);
+    }
+    .hero h1 {
+      font-family: 'Outfit', sans-serif;
+      font-size: clamp(2rem, 5vw, 3rem);
+      font-weight: 800;
+      color: var(--white);
+      margin-bottom: 0.5rem;
+    }
+    .hero-subtitle {
+      font-family: 'Crimson Pro', serif;
+      font-size: 1.25rem;
+      font-weight: 300;
+      font-style: italic;
+      color: var(--text-muted);
+    }
+    
+    .content {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 3rem 2rem 6rem;
+    }
+    
+    .chapter {
+      margin-bottom: 4rem;
+      padding-bottom: 4rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .chapter-header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    .chapter-tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--sky);
+      background: var(--sky-glow2);
+      border: 1px solid var(--sky-glow);
+      padding: 3px 9px;
+      border-radius: 2px;
+      font-weight: 600;
+    }
+    .chapter-header h3 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: var(--white);
+    }
+    
+    .prose p {
+      color: var(--text-muted);
+      margin-bottom: 1.25rem;
+      font-size: 15px;
+    }
+    .prose h4 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--white);
+      margin: 2rem 0 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .prose h4::before {
+      content: '';
+      width: 3px;
+      height: 1em;
+      background: var(--sky);
+      border-radius: 2px;
+    }
+    
+    .notes-list {
+      margin-bottom: 1.5rem;
+      padding-left: 1.25rem;
+      color: var(--text-muted);
+    }
+    .notes-list li {
+      margin-bottom: 0.5rem;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="hero">
+    <h1>${title}</h1>
+    <p class="hero-subtitle">Interactive Study Guide • ${subject}</p>
+  </div>
+  <div class="content">
+    ${htmlBody}
+  </div>
+</body>
+</html>
+  `;
 }
