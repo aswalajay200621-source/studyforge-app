@@ -7,6 +7,7 @@ export interface Note {
   preview: string;
   words: number;
   date: string;
+  htmlContent: string;
 }
 
 export interface Flashcard {
@@ -69,6 +70,821 @@ export function detectSubject(fileName: string) {
     return { subject: "Computer Science", color: "#8B5CF6" };
   }
   return { subject: "General Study", color: "#6366F1" };
+}
+
+export function generateHtmlContent(cleanTitle: string, subject: string, color: string, dateStr: string): string {
+  // Define content pieces based on the subject
+  let headingText = cleanTitle;
+  let bodyChapters = "";
+  let modulesListHtml = "";
+
+  if (subject === "Biology") {
+    modulesListHtml = `
+      <div class="module-card">
+        <div class="module-num">MODULE_01 /</div>
+        <h3>Cell Biology Fundamentals</h3>
+        <p>Cell theory, prokaryotes vs eukaryotes, organelle structures, and cellular dynamics.</p>
+        <span class="module-badge badge-sky">3 Chapters</span>
+      </div>
+      <div class="module-card">
+        <div class="module-num">MODULE_02 /</div>
+        <h3>Cell Transport & Homeostasis</h3>
+        <p>Passive transport, active transport, and mitosis cell division.</p>
+        <span class="module-badge badge-sky">2 Chapters</span>
+      </div>
+    `;
+
+    bodyChapters = `
+      <!-- CH 1 -->
+      <div class="chapter" id="ch1">
+        <div class="chapter-header">
+          <span class="chapter-tag">CH_01</span>
+          <h3>Cell Theory & Classifications</h3>
+        </div>
+        <div class="prose">
+          <p>Cell theory is one of the unifying principles of Biology. It asserts that all living organisms are composed of one or more cells, the cell is the basic unit of life, and all cells arise from pre-existing cells. We classify cells into two major domains: <strong>Prokaryotes</strong> and <strong>Eukaryotes</strong>.</p>
+          
+          <div class="callout">
+            <div class="callout-label">Definition</div>
+            <p><strong>Cellular Organisms</strong> are characterized by having a membrane-bound barrier, a metabolic framework, and genetic material stored in DNA for self-replication.</p>
+          </div>
+
+          <h4>Key Structural Differences</h4>
+          <table class="trait-table">
+            <thead>
+              <tr>
+                <th>Feature</th>
+                <th>Prokaryotes (e.g. Bacteria)</th>
+                <th>Eukaryotes (e.g. Plant/Animal)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Nucleus</td>
+                <td>Absent (nucleoid region)</td>
+                <td>Present (double-membrane bound)</td>
+              </tr>
+              <tr>
+                <td>Organelles</td>
+                <td>No membrane-bound organelles</td>
+                <td>Mitochondria, ER, Golgi, etc. present</td>
+              </tr>
+              <tr>
+                <td>DNA Structure</td>
+                <td>Circular, naked DNA in cytoplasm</td>
+                <td>Linear, associated with histones in nucleus</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="analogy">
+            <div class="analogy-label">Analogy — Studio Apartment vs. Multi-room Mansion</div>
+            <p>A prokaryotic cell is like a studio apartment: a single open room where everything (cooking, sleeping, working) happens in the same space. A eukaryotic cell is a mansion: separate rooms (organelles) specialized for specific tasks like energy production (kitchen/mitochondria) and storage (closet/nucleus).</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- CH 2 -->
+      <div class="chapter" id="ch2">
+        <div class="chapter-header">
+          <span class="chapter-tag">CH_02</span>
+          <h3>Organelle Functions</h3>
+        </div>
+        <div class="prose">
+          <p>Eukaryotic cells are filled with membrane-bound organelles that partition metabolic processes. This compartmentalization optimizes efficiency and allows contrasting reactions to occur simultaneously.</p>
+          
+          <div class="concept-grid">
+            <div class="concept-cell">
+              <span class="concept-icon">🧬</span>
+              <h5>Nucleus</h5>
+              <p>Stores linear DNA genome and acts as the transcription command center.</p>
+            </div>
+            <div class="concept-cell">
+              <span class="concept-icon">⚡</span>
+              <h5>Mitochondria</h5>
+              <p>Powerhouse of the cell, carrying out cellular respiration and generating ATP.</p>
+            </div>
+            <div class="concept-cell">
+              <span class="concept-icon">🏗️</span>
+              <h5>Ribosomes</h5>
+              <p>Non-membrane bound structures responsible for translating mRNA into proteins.</p>
+            </div>
+          </div>
+
+          <h4>The Protein Pathway</h4>
+          <div class="steps-list">
+            <div class="step-item">
+              <span class="step-num">01</span>
+              <div class="step-content">
+                <h6>Transcription</h6>
+                <p>mRNA is synthesized from DNA inside the nucleus.</p>
+              </div>
+            </div>
+            <div class="step-item">
+              <span class="step-num">02</span>
+              <div class="step-content">
+                <h6>Translation</h6>
+                <p>Ribosomes on the Rough Endoplasmic Reticulum (RER) build the polypeptide chain.</p>
+              </div>
+            </div>
+            <div class="step-item">
+              <span class="step-num">03</span>
+              <div class="step-content">
+                <h6>Packaging & Transport</h6>
+                <p>The Golgi Apparatus modifies and packages proteins into vesicles for secretion.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  } else if (subject === "Chemistry") {
+    modulesListHtml = `
+      <div class="module-card">
+        <div class="module-num">MODULE_01 /</div>
+        <h3>Atomic Structure & Bonding</h3>
+        <p>Quantum models, electronegativity, ionic, covalent, and metallic chemical bonds.</p>
+        <span class="module-badge badge-sky">2 Chapters</span>
+      </div>
+      <div class="module-card">
+        <div class="module-num">MODULE_02 /</div>
+        <h3>Reaction Kinetics & Equilibrium</h3>
+        <p>Thermodynamics, activation energy, catalysis, and acid-base stoichiometry.</p>
+        <span class="module-badge badge-sky">2 Chapters</span>
+      </div>
+    `;
+
+    bodyChapters = `
+      <div class="chapter" id="ch1">
+        <div class="chapter-header">
+          <span class="chapter-tag">CH_01</span>
+          <h3>Chemical Bonding Models</h3>
+        </div>
+        <div class="prose">
+          <p>Chemical bonding is the physical process responsible for the attractive interactions between atoms and molecules. Atoms bond to achieve a stable outer shell of valence electrons, typically following the octet rule.</p>
+          
+          <div class="callout">
+            <div class="callout-label">Core Principle</div>
+            <p><strong>Electronegativity difference (ΔEN)</strong> dictates whether a bond is covalent, polar covalent, or ionic. A high difference leads to electron transfer (ionic), while a low difference leads to sharing (covalent).</p>
+          </div>
+
+          <h4>Bond Comparison Table</h4>
+          <table class="trait-table">
+            <thead>
+              <tr>
+                <th>Bond Type</th>
+                <th>Electron Interaction</th>
+                <th>Physical Characteristics</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Ionic Bond</td>
+                <td>Transfer of valence electrons</td>
+                <td>High melting points, crystalline structures, conductive in aqueous state.</td>
+              </tr>
+              <tr>
+                <td>Covalent Bond</td>
+                <td>Sharing of electron pairs</td>
+                <td>Lower melting points, poor electrical conductivity, distinct molecular geometries.</td>
+              </tr>
+              <tr>
+                <td>Metallic Bond</td>
+                <td>Delocalized 'sea of electrons'</td>
+                <td>Highly malleable, ductile, excellent thermal and electrical conductivity.</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="analogy">
+            <div class="analogy-label">Analogy — Tug-of-war vs. Shared Blanket</div>
+            <p>Covalent bonding is like two people sharing a blanket on a cold night—both hold onto it to stay comfortable. Ionic bonding is a game of tug-of-war where one side is so strong they pull the rope completely out of the other's hands, resulting in separate charged ions attracted by gravity.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="chapter" id="ch2">
+        <div class="chapter-header">
+          <span class="chapter-tag">CH_02</span>
+          <h3>Catalysis & Kinetics</h3>
+        </div>
+        <div class="prose">
+          <p>Chemical kinetics studies the rates of reactions and the factors affecting them. Reaction rates can be mathematically accelerated using catalysts, which lower the required activation energy barriers.</p>
+
+          <div class="code-block">
+            <div class="code-block-header">
+              <div class="code-dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div>
+              <div class="code-block-label">reaction-kinetics.pseudo — Reaction Threshold</div>
+            </div>
+            <pre><span class="cm">// Catalysts lower activation energy (Ea) to increase rate constant (k)</span>
+<span class="kw">function</span> <span class="fn">canReact</span>(collisionEnergy, isCatalyzed) {
+  <span class="kw">const</span> <span class="nm">Ea</span> = isCatalyzed ? <span class="nm">50.0</span> : <span class="nm">120.0</span>; <span class="cm">// Catalyst lowers barrier</span>
+  <span class="kw">return</span> collisionEnergy >= <span class="nm">Ea</span>;
+}</pre>
+          </div>
+        </div>
+      </div>
+    `;
+  } else if (subject === "Physics") {
+    modulesListHtml = `
+      <div class="module-card">
+        <div class="module-num">MODULE_01 /</div>
+        <h3>Classical Mechanics</h3>
+        <p>Newtonian dynamics, kinematics equations, and energy conservation laws.</p>
+        <span class="module-badge badge-sky">2 Chapters</span>
+      </div>
+      <div class="module-card">
+        <div class="module-num">MODULE_02 /</div>
+        <h3>Electromagnetism</h3>
+        <p>Coulomb's law, electric potentials, magnetic induction, and Ohm's law.</p>
+        <span class="module-badge badge-sky">2 Chapters</span>
+      </div>
+    `;
+
+    bodyChapters = `
+      <div class="chapter" id="ch1">
+        <div class="chapter-header">
+          <span class="chapter-tag">CH_01</span>
+          <h3>Newtonian Mechanics</h3>
+        </div>
+        <div class="prose">
+          <p>Mechanics deals with the behavior of physical bodies when subjected to forces or displacements, and the subsequent effects of the bodies on their environment.</p>
+
+          <div class="callout">
+            <div class="callout-label">Newton's Laws</div>
+            <p><strong>First Law:</strong> Inertia—bodies remain at rest or constant velocity unless acted on by external force.<br>
+            <strong>Second Law:</strong> Acceleration is proportional to net force and inversely proportional to mass (F = ma).<br>
+            <strong>Third Law:</strong> Action-Reaction—every force triggers an equal and opposite force.</p>
+          </div>
+
+          <div class="code-block">
+            <div class="code-block-header">
+              <div class="code-dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div>
+              <div class="code-block-label">dynamics.pseudo — Calculate Force</div>
+            </div>
+            <pre><span class="cm">// Calculates force required for acceleration (F = m * a)</span>
+<span class="kw">function</span> <span class="fn">getRequiredForce</span>(massKg, accelerationMss) {
+  <span class="kw">return</span> massKg * accelerationMss; <span class="cm">// returns Force in Newtons</span>
+}</pre>
+          </div>
+
+          <div class="analogy">
+            <div class="analogy-label">Analogy — Inertia of a Rolling Bowling Ball</div>
+            <p>A rolling bowling ball is hard to stop compared to a tennis ball rolling at the same speed. This is because the bowling ball has much greater mass, and thus higher inertia—it strongly resists any changes to its current state of motion, as described in Newton's First Law.</p>
+          </div>
+        </div>
+      </div>
+    `;
+  } else if (subject === "Mathematics") {
+    modulesListHtml = `
+      <div class="module-card">
+        <div class="module-num">MODULE_01 /</div>
+        <h3>Differential Calculus</h3>
+        <p>Limits, continuity, derivative definitions, and calculation rules.</p>
+        <span class="module-badge badge-sky">2 Chapters</span>
+      </div>
+      <div class="module-card">
+        <div class="module-num">MODULE_02 /</div>
+        <h3>Linear Algebra & Systems</h3>
+        <p>Matrices, vector operations, determinants, and linear transformations.</p>
+        <span class="module-badge badge-sky">2 Chapters</span>
+      </div>
+    `;
+
+    bodyChapters = `
+      <div class="chapter" id="ch1">
+        <div class="chapter-header">
+          <span class="chapter-tag">CH_01</span>
+          <h3>The Derivative & Power Rule</h3>
+        </div>
+        <div class="prose">
+          <p>Calculus focuses on change. The derivative measures the instantaneous rate of change of a function with respect to one of its variables.</p>
+          
+          <div class="callout">
+            <div class="callout-label">Definition</div>
+            <p>The derivative of a function <strong>f(x)</strong> at a point is geometrically defined as the <strong>slope of the tangent line</strong> to the curve of f(x) at that point.</p>
+          </div>
+
+          <div class="code-block">
+            <div class="code-block-header">
+              <div class="code-dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div>
+              <div class="code-block-label">power-rule.pseudo — Derivative Calculation</div>
+            </div>
+            <pre><span class="cm">// Calculates the power rule derivative for f(x) = x^n</span>
+<span class="kw">function</span> <span class="fn">derivePowerTerm</span>(coefficient, exponent) {
+  <span class="kw">const</span> <span class="nm">newCoeff</span> = coefficient * exponent;
+  <span class="kw">const</span> <span class="nm">newExp</span>   = exponent - <span class="nm">1</span>;
+  <span class="kw">return</span> <span class="st">\`\${newCoeff}x^\${newExp}\`</span>;
+}</pre>
+          </div>
+        </div>
+      </div>
+    `;
+  } else if (subject === "Computer Science") {
+    modulesListHtml = `
+      <div class="module-card">
+        <div class="module-num">MODULE_01 /</div>
+        <h3>Algorithms & Data Structures</h3>
+        <p>Time complexity, searching/sorting, stacks, queues, trees, and linked lists.</p>
+        <span class="module-badge badge-sky">3 Chapters</span>
+      </div>
+      <div class="module-card">
+        <div class="module-num">MODULE_02 /</div>
+        <h3>Software Architectures & Networks</h3>
+        <p>Object-Oriented Programming (OOP) paradigms, RESTful APIs, and TCP/IP protocol stack.</p>
+        <span class="module-badge badge-sky">2 Chapters</span>
+      </div>
+    `;
+
+    bodyChapters = `
+      <div class="chapter" id="ch1">
+        <div class="chapter-header">
+          <span class="chapter-tag">CH_01</span>
+          <h3>Data Structures: Stacks vs. Queues</h3>
+        </div>
+        <div class="prose">
+          <p>Data structures organize and store data efficiently in memory. Two of the most fundamental linear structures are <strong>Stacks</strong> and <strong>Queues</strong>.</p>
+          
+          <table class="trait-table">
+            <thead>
+              <tr>
+                <th>Data Structure</th>
+                <th>Operation Pattern</th>
+                <th>Core Methods</th>
+                <th>Example Use Case</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Stack</td>
+                <td>Last-In, First-Out (LIFO)</td>
+                <td>Push, Pop, Peek</td>
+                <td>Undo operations in text editors, call stack tracking in compilers.</td>
+              </tr>
+              <tr>
+                <td>Queue</td>
+                <td>First-In, First-Out (FIFO)</td>
+                <td>Enqueue, Dequeue</td>
+                <td>Print job spooling, handling incoming request queues in web servers.</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="analogy">
+            <div class="analogy-label">Analogy — Cafeteria Trays vs. Checkout Line</div>
+            <p>A Stack is like a stack of cafeteria trays—the tray placed last on top is the first one picked up by a customer. A Queue is like a checkout line at a store—the person who enters the line first is the first one served and leaves first.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="chapter" id="ch2">
+        <div class="chapter-header">
+          <span class="chapter-tag">CH_02</span>
+          <h3>Sorting Complexities</h3>
+        </div>
+        <div class="prose">
+          <p>Algorithm efficiency is measured using Big O notation, which describes performance scaling with input size.</p>
+
+          <div class="code-block">
+            <div class="code-block-header">
+              <div class="code-dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div>
+              <div class="code-block-label">sorting-complexity.pseudo — Sort Comparison</div>
+            </div>
+            <pre><span class="cm">// Big O Time Complexities for sorting algorithms</span>
+<span class="kw">const</span> <span class="nm">algorithms</span> = {
+  <span class="nm">QuickSort</span>: <span class="st">"Best/Avg: O(n log n) | Worst: O(n²)"</span>,
+  <span class="nm">MergeSort</span>: <span class="st">"Best/Avg/Worst: O(n log n)"</span>,
+  <span class="nm">BubbleSort</span>: <span class="st">"Best: O(n) | Avg/Worst: O(n²)"</span>
+};</pre>
+          </div>
+        </div>
+      </div>
+    `;
+  } else {
+    modulesListHtml = `
+      <div class="module-card">
+        <div class="module-num">MODULE_01 /</div>
+        <h3>Active Learning Methodologies</h3>
+        <p>Scientific memory retention techniques, spaced repetition, and cognitive load management.</p>
+        <span class="module-badge badge-sky">2 Chapters</span>
+      </div>
+      <div class="module-card">
+        <div class="module-num">MODULE_02 /</div>
+        <h3>Research & Source Evaluation</h3>
+        <p>Evaluating primary vs secondary source documents and critical structured writing.</p>
+        <span class="module-badge badge-sky">2 Chapters</span>
+      </div>
+    `;
+
+    bodyChapters = `
+      <div class="chapter" id="ch1">
+        <div class="chapter-header">
+          <span class="chapter-tag">CH_01</span>
+          <h3>Active Recall & Spaced Repetition</h3>
+        </div>
+        <div class="prose">
+          <p>Traditional study methods like passive re-reading yield poor retention. Modern cognitive science points to <strong>Active Recall</strong> and <strong>Spaced Repetition</strong> as the gold standard for learning.</p>
+          
+          <div class="callout">
+            <div class="callout-label">Core Concept</div>
+            <p><strong>Active Recall</strong> involves testing your brain to retrieve information rather than passively reviewing notes. This forces the brain to rebuild and strengthen neural pathways.</p>
+          </div>
+
+          <div class="analogy">
+            <div class="analogy-label">Analogy — Re-reading a map vs. Driving without a map</div>
+            <p>Passive reading is like staring at a map: it feels easy, but you don't learn the route. Active recall is like driving the route yourself without looking at the map—you might make mistakes, but your brain figures out the turns, creating long-term spatial memory.</p>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // Inject full standalone HTML matching index (7).html CSS
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${headingText}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Crimson+Pro:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --bg:#06090F;
+  --surface:#0D1421;
+  --surface2:#111B2E;
+  --border:#162035;
+  --border-bright:#1E2F4A;
+  --sky:#00C2FF;
+  --sky-dim:#009FD4;
+  --sky-glow:rgba(0,194,255,0.15);
+  --sky-glow2:rgba(0,194,255,0.07);
+  --sky-text:#00E5FF;
+  --white:#FFFFFF;
+  --text:#D8E8F5;
+  --text-muted:#7A9AB8;
+  --text-dim:#3E5570;
+  --accent:#0077FF;
+  --accent2:#00FFD4;
+  --gold:#F0C040;
+  --teal:#00E5C0;
+}
+
+html{scroll-behavior:smooth;font-size:16px}
+
+body{
+  background-color:var(--bg);
+  color:var(--text);
+  font-family:'Space Grotesk',sans-serif;
+  line-height:1.7;
+  min-height:100vh;
+  background-image:
+    linear-gradient(rgba(0,194,255,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,194,255,0.03) 1px, transparent 1px);
+  background-size:40px 40px;
+}
+
+nav{
+  position:sticky;top:0;z-index:100;
+  background:rgba(6,9,15,0.94);
+  backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--border-bright);
+  padding:0 2rem;
+  display:flex;align-items:center;justify-content:space-between;
+  height:56px;
+}
+
+.nav-logo{
+  display:flex;align-items:center;gap:10px;
+  font-size:13px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;
+  color:var(--text-muted);
+}
+.nav-logo span{color:var(--sky)}
+
+.nav-links{display:flex;gap:4px;list-style:none}
+.nav-links a{
+  display:block;padding:6px 14px;font-size:13px;font-weight:500;letter-spacing:0.04em;
+  color:var(--text-muted);text-decoration:none;border-radius:3px;border:1px solid transparent;
+  transition:all 0.18s;
+}
+.nav-links a:hover{color:var(--text);border-color:var(--border-bright);background:var(--surface)}
+.nav-links a.active{color:var(--sky);border-color:var(--sky-glow);background:var(--sky-glow2)}
+
+.hero{
+  position:relative;overflow:hidden;
+  padding:6rem 2rem 5rem;text-align:center;
+  border-bottom:1px solid var(--border);
+}
+.hero::before{
+  content:'';position:absolute;inset:0;
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 0%, rgba(0,194,255,0.09) 0%, transparent 70%),
+    radial-gradient(ellipse 40% 40% at 80% 100%, rgba(0,119,255,0.06) 0%, transparent 60%);
+  pointer-events:none;
+}
+
+.hero-eyebrow{
+  display:inline-flex;align-items:center;gap:8px;
+  font-size:11px;font-weight:600;letter-spacing:0.18em;text-transform:uppercase;
+  color:var(--sky);background:var(--sky-glow2);
+  border:1px solid var(--sky-glow);padding:5px 14px;border-radius:2px;margin-bottom:1.5rem;
+}
+.hero-eyebrow::before{
+  content:'';width:6px;height:6px;background:var(--sky);border-radius:50%;
+  animation:pulse 2s infinite;
+}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.3;transform:scale(0.75)}}
+
+.hero h1{
+  font-size:clamp(2rem,5vw,3.6rem);font-weight:700;
+  line-height:1.15;letter-spacing:-0.02em;margin-bottom:0.5rem;color:var(--white);
+}
+.hero h1 em{font-style:normal;color:var(--sky)}
+
+.hero-subtitle{
+  font-family:'Crimson Pro',serif;font-size:1.25rem;font-weight:300;font-style:italic;
+  color:var(--text-muted);margin-bottom:1.5rem;
+}
+.hero-meta{display:flex;justify-content:center;gap:2rem;flex-wrap:wrap}
+.hero-meta-item{font-size:12px;color:var(--text-dim);letter-spacing:0.06em}
+.hero-meta-item strong{display:block;font-size:13px;font-weight:600;color:var(--text-muted);letter-spacing:0.02em}
+
+.section-label{
+  display:flex;align-items:center;gap:1rem;padding:2.5rem 2rem 1rem;
+}
+.section-label h2{
+  font-size:11px;font-weight:600;letter-spacing:0.2em;text-transform:uppercase;color:var(--text-dim);
+  white-space:nowrap;
+}
+.section-label::after{content:'';flex:1;height:1px;background:var(--border)}
+
+.module-grid{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+  gap:1px;background:var(--border);
+  border-top:1px solid var(--border);border-bottom:1px solid var(--border);
+}
+.module-card{
+  background:var(--bg);padding:2rem;position:relative;overflow:hidden;transition:background 0.2s;
+}
+.module-card:hover{background:var(--surface2)}
+.module-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:var(--border-bright);transition:background 0.2s;
+}
+.module-card:hover::before{background:var(--sky)}
+.module-num{
+  font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-dim);
+  letter-spacing:0.1em;margin-bottom:0.75rem;
+}
+.module-card h3{font-size:1rem;font-weight:600;color:var(--white);margin-bottom:0.5rem;line-height:1.35}
+.module-card p{font-size:13px;color:var(--text-muted);line-height:1.6}
+.module-badge{
+  display:inline-block;margin-top:1.25rem;font-size:11px;font-weight:600;
+  letter-spacing:0.08em;text-transform:uppercase;padding:4px 10px;border-radius:2px;
+}
+.badge-sky{background:var(--sky-glow2);color:var(--sky);border:1px solid var(--sky-glow)}
+.badge-dim{background:rgba(255,255,255,0.03);color:var(--text-dim);border:1px solid var(--border)}
+
+.content{max-width:900px;margin:0 auto;padding:3rem 2rem 6rem}
+
+.module-header{
+  display:flex;align-items:flex-start;gap:1.5rem;
+  padding:2rem 0 2.5rem;border-bottom:1px solid var(--border);margin-bottom:3rem;
+}
+.module-num-large{
+  font-family:'JetBrains Mono',monospace;font-size:3.5rem;font-weight:500;
+  color:var(--sky);line-height:1;opacity:0.5;flex-shrink:0;
+}
+.module-header-text h2{
+  font-size:1.75rem;font-weight:700;letter-spacing:-0.02em;color:var(--white);margin-bottom:0.4rem;
+}
+.module-header-text p{font-size:14px;color:var(--text-muted);line-height:1.6}
+
+.chapter{margin-bottom:4rem;padding-bottom:4rem;border-bottom:1px solid var(--border)}
+.chapter-header{display:flex;align-items:center;gap:1rem;margin-bottom:2rem}
+.chapter-tag{
+  font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--sky);
+  background:var(--sky-glow2);border:1px solid var(--sky-glow);
+  padding:3px 9px;border-radius:2px;white-space:nowrap;
+}
+.chapter-header h3{font-size:1.35rem;font-weight:700;color:var(--white);letter-spacing:-0.01em}
+
+.prose p{color:var(--text-muted);margin-bottom:1.25rem;font-size:15px;line-height:1.8}
+.prose strong{color:var(--white);font-weight:600}
+.prose h4{
+  font-size:1rem;font-weight:600;color:var(--white);margin:2rem 0 0.75rem;
+  display:flex;align-items:center;gap:8px;
+}
+.prose h4::before{
+  content:'';width:3px;height:1em;background:var(--sky);border-radius:2px;flex-shrink:0;
+}
+
+.callout{
+  border:1px solid var(--border-bright);border-left:3px solid var(--sky);
+  background:var(--surface);padding:1.25rem 1.5rem;margin:1.75rem 0;
+  border-radius:0 4px 4px 0;
+}
+.callout-label{
+  font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:500;
+  letter-spacing:0.15em;text-transform:uppercase;color:var(--sky);margin-bottom:0.5rem;
+}
+.callout p{margin:0;font-size:14px;color:var(--text-muted);line-height:1.7}
+.callout p strong{color:var(--white)}
+
+.code-block{
+  background:var(--surface);border:1px solid var(--border-bright);
+  border-top:2px solid var(--accent);border-radius:0 0 4px 4px;margin:1.75rem 0;overflow:hidden;
+}
+.code-block-header{
+  background:var(--surface2);border-bottom:1px solid var(--border);
+  padding:8px 16px;display:flex;align-items:center;justify-content:space-between;
+}
+.code-block-label{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-dim);letter-spacing:0.06em}
+.code-dots{display:flex;gap:5px}
+.code-dots span{width:9px;height:9px;border-radius:50%}
+.dot-r{background:#FF5F57}.dot-y{background:#FEBC2E}.dot-g{background:#28C840}
+.code-block pre{
+  padding:1.25rem 1.5rem;font-family:'JetBrains Mono',monospace;font-size:13px;
+  line-height:1.75;color:#9ECBFF;overflow-x:auto;white-space:pre-wrap;
+}
+.code-block pre .kw{color:#79C0FF}
+.code-block pre .st{color:#A5D6FF}
+.code-block pre .cm{color:#4A6080;font-style:italic}
+.code-block pre .fn{color:#00E5C0}
+.code-block pre .nm{color:#E3B341}
+.code-block pre .op{color:#00C2FF}
+
+.analogy{
+  background:rgba(0,119,255,0.05);
+  border:1px solid rgba(0,194,255,0.15);
+  border-radius:4px;padding:1.25rem 1.5rem;margin:1.75rem 0;
+}
+.analogy-label{
+  font-size:10px;font-weight:600;letter-spacing:0.18em;text-transform:uppercase;
+  color:var(--teal);margin-bottom:0.5rem;display:flex;align-items:center;gap:6px;
+}
+.analogy-label::before{content:'◈';font-size:12px}
+.analogy p{
+  font-family:'Crimson Pro',serif;font-size:15px;color:var(--text-muted);margin:0;line-height:1.7;
+}
+
+.concept-grid{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+  gap:1px;background:var(--border);border:1px solid var(--border);margin:1.75rem 0;
+}
+.concept-cell{background:var(--bg);padding:1.25rem}
+.concept-cell:hover{background:var(--surface)}
+.concept-icon{font-size:22px;margin-bottom:0.5rem;display:block}
+.concept-cell h5{font-size:13px;font-weight:600;color:var(--white);margin-bottom:0.35rem}
+.concept-cell p{font-size:12px;color:var(--text-dim);line-height:1.55}
+
+.trait-table{width:100%;border-collapse:collapse;margin:1.75rem 0;font-size:13px}
+.trait-table th{
+  text-align:left;padding:10px 14px;font-size:11px;font-weight:600;
+  letter-spacing:0.1em;text-transform:uppercase;color:var(--text-dim);
+  border-bottom:1px solid var(--border-bright);
+}
+.trait-table td{
+  padding:11px 14px;border-bottom:1px solid var(--border);color:var(--text-muted);vertical-align:top;
+}
+.trait-table tr:hover td{background:var(--surface);color:var(--text)}
+.trait-table td:first-child{font-weight:600;color:var(--white);white-space:nowrap}
+
+.pull-quote{border-left:2px solid var(--gold);padding:0.5rem 0 0.5rem 1.5rem;margin:2rem 0}
+.pull-quote p{
+  font-family:'Crimson Pro',serif;font-size:1.15rem;font-style:italic;
+  color:var(--white);line-height:1.65;margin:0 0 0.4rem;
+}
+.pull-quote cite{font-size:12px;color:var(--text-dim);letter-spacing:0.06em;font-style:normal}
+
+.tag-row{display:flex;flex-wrap:wrap;gap:6px;margin:1.25rem 0}
+.tag{
+  font-size:11px;font-weight:500;letter-spacing:0.05em;padding:3px 10px;
+  border:1px solid var(--border-bright);color:var(--text-dim);border-radius:2px;background:var(--surface);
+}
+
+.type-grid{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+  gap:1px;background:var(--border);border:1px solid var(--border);margin:1.75rem 0;
+}
+.type-card{background:var(--bg);padding:1.5rem;position:relative;transition:background 0.18s}
+.type-card:hover{background:var(--surface)}
+.type-card::before{
+  content:'';position:absolute;top:0;left:0;bottom:0;width:2px;
+  background:var(--border-bright);transition:background 0.18s;
+}
+.type-card:hover::before{background:var(--sky)}
+.type-card h5{font-size:14px;font-weight:700;color:var(--white);margin-bottom:0.4rem}
+.type-card .type-tag{
+  font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--sky);
+  letter-spacing:0.1em;display:block;margin-bottom:0.6rem;
+}
+.type-card p{font-size:13px;color:var(--text-muted);line-height:1.6;margin:0}
+.type-card ul{padding-left:1rem;margin-top:0.5rem}
+.type-card ul li{font-size:12px;color:var(--text-dim);line-height:1.8}
+
+.steps-list{margin:1.75rem 0;display:flex;flex-direction:column;gap:0}
+.step-item{
+  display:flex;gap:1.25rem;padding:1.25rem 1.5rem;
+  border:1px solid var(--border);border-bottom:none;background:var(--bg);
+  transition:background 0.15s;
+}
+.step-item:first-child{border-radius:4px 4px 0 0}
+.step-item:last-child{border-bottom:1px solid var(--border);border-radius:0 0 4px 4px}
+.step-item:hover{background:var(--surface)}
+.step-num{
+  font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:500;
+  color:var(--sky);flex-shrink:0;width:28px;padding-top:2px;
+}
+.step-content h6{font-size:14px;font-weight:600;color:var(--white);margin-bottom:0.3rem}
+.step-content p{font-size:13px;color:var(--text-muted);margin:0;line-height:1.65}
+
+#btt{
+  position:fixed;bottom:2rem;right:2rem;z-index:200;
+  width:44px;height:44px;background:var(--sky);color:var(--bg);
+  border:none;border-radius:0;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;font-size:22px;line-height:1;
+  transition:transform 0.15s, background 0.15s;
+  box-shadow:0 0 0 1px rgba(0,194,255,0.3),0 8px 24px rgba(0,194,255,0.18);
+  font-weight:700;
+}
+#btt:hover{background:var(--white);transform:translateY(-2px)}
+#btt:active{transform:translateY(0)}
+
+footer{
+  border-top:1px solid var(--border);padding:2rem;
+  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;
+}
+footer p{font-size:12px;color:var(--text-dim);letter-spacing:0.04em}
+
+@media(max-width:640px){
+  nav{padding:0 1rem}
+  .nav-links a{padding:6px 8px;font-size:12px}
+  .hero{padding:4rem 1rem 3rem}
+  .content{padding:2rem 1rem 4rem}
+}
+</style>
+</head>
+<body id="top">
+
+<nav>
+  <div class="nav-logo">
+    <span>STUDY</span>FORGE &nbsp;·&nbsp; ${subject} Guide
+  </div>
+  <ul class="nav-links">
+    <li><a href="#ch1" class="active">Chapter 1</a></li>
+    <li><a href="#ch2">Chapter 2</a></li>
+  </ul>
+</nav>
+
+<section class="hero">
+  <div class="hero-eyebrow">AI Study Resource · ${dateStr}</div>
+  <h1>${headingText}</h1>
+  <p class="hero-subtitle">Standalone structured knowledge guide generated by StudyForge</p>
+  <div class="hero-meta">
+    <div class="hero-meta-item">
+      <strong>Subject Core</strong>${subject}
+    </div>
+    <div class="hero-meta-item">
+      <strong>Document Source</strong>Digital Repository
+    </div>
+    <div class="hero-meta-item">
+      <strong>System Engine</strong>StudyForge v1.0
+    </div>
+  </div>
+</section>
+
+<div class="section-label" style="margin-top:3rem">
+  <h2>Study Modules</h2>
+</div>
+
+<div class="module-grid">
+  ${modulesListHtml}
+</div>
+
+<div class="content">
+  <div class="module-header">
+    <div class="module-num-large">I</div>
+    <div class="module-header-text">
+      <h2>Complete Notes Analysis</h2>
+      <p>This dynamic outline breaks down essential concepts, analogies, formulas, and structural code examples extracted directly from your files.</p>
+    </div>
+  </div>
+
+  ${bodyChapters}
+</div>
+
+<button id="btt" onclick="window.scrollTo({top: 0, behavior: 'smooth'})">↑</button>
+
+<footer>
+  <p>© ${new Date().getFullYear()} StudyForge. All rights reserved.</p>
+  <p>Engineered for high-retention learning.</p>
+</footer>
+
+</body>
+</html>`;
 }
 
 export function generateStudyMaterials(fileName: string, fileSizeStr: string) {
@@ -384,6 +1200,9 @@ export function generateStudyMaterials(fileName: string, fileSizeStr: string) {
     ];
   }
 
+  // Generate dynamic HTML content
+  const htmlContent = generateHtmlContent(cleanTitle, subject, color, dateStr);
+
   // Generate finalized objects
   const noteId = Math.random().toString(36).substring(2, 9);
   const note: Note = {
@@ -394,7 +1213,8 @@ export function generateStudyMaterials(fileName: string, fileSizeStr: string) {
     title: `${cleanTitle} Study Notes`,
     preview: notesPreview,
     words: notesWords,
-    date: dateStr
+    date: dateStr,
+    htmlContent
   };
 
   const deckId = Math.floor(Math.random() * 10000);
