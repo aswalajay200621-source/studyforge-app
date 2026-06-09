@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Search, Bookmark, MoreVertical, FileText, ChevronDown, Upload, Download, Eye, X } from "lucide-react";
+import { Plus, Search, Bookmark, MoreVertical, FileText, ChevronDown, Upload, Download, Eye, X, BookOpen } from "lucide-react";
 import Link from "next/link";
 
 export default function NotesPage() {
@@ -29,15 +29,26 @@ export default function NotesPage() {
 
   const downloadHtmlFile = (note: any, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
-    if (!note.htmlContent) {
-      alert("No HTML content available for this note.");
-      return;
-    }
+    if (!note.htmlContent) return;
     const blob = new Blob([note.htmlContent], { type: "text/html;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
     a.download = `${note.title.replace(/[\s\W]+/g, "_")}.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const downloadTextFile = (note: any, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (!note.textContent) return;
+    const blob = new Blob([note.textContent], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${note.title.replace(/[\s\W]+/g, "_")}_notes.txt`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -125,13 +136,27 @@ export default function NotesPage() {
             >
               {/* Tag & Actions */}
               <div className="flex justify-between items-start mb-4">
-                <span className="text-xs font-semibold px-2.5 py-1 rounded-full" style={{ background: `${note.color}15`, color: note.color }}>
-                  {note.subject}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold px-2.5 py-1 rounded-full" style={{ background: `${note.color}15`, color: note.color }}>
+                    {note.subject}
+                  </span>
+                  {note.isTextbook && (
+                    <span className="text-xs font-semibold px-2 py-1 rounded-full flex items-center gap-1" style={{ background: "rgba(14,165,233,0.12)", color: "#0EA5E9", border: "1px solid rgba(14,165,233,0.25)" }}>
+                      <BookOpen className="w-3 h-3" /> Textbook
+                    </span>
+                  )}
+                </div>
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button onClick={(e) => downloadHtmlFile(note, e)} title="Download Standalone HTML" className="p-1.5 rounded-lg hover:bg-[var(--surface-hover)] text-[var(--foreground-muted)] hover:text-emerald-500 transition-colors">
-                    <Download className="w-4 h-4" />
-                  </button>
+                  {!note.isTextbook && (
+                    <button onClick={(e) => downloadHtmlFile(note, e)} title="Download HTML" className="p-1.5 rounded-lg hover:bg-[var(--surface-hover)] text-[var(--foreground-muted)] hover:text-emerald-500 transition-colors">
+                      <Download className="w-4 h-4" />
+                    </button>
+                  )}
+                  {note.isTextbook && (
+                    <button onClick={(e) => downloadTextFile(note, e)} title="Download Text Notes" className="p-1.5 rounded-lg hover:bg-[var(--surface-hover)] text-[var(--foreground-muted)] hover:text-sky-500 transition-colors">
+                      <Download className="w-4 h-4" />
+                    </button>
+                  )}
                   <button className="p-1.5 rounded-lg hover:bg-[var(--surface-hover)] text-[var(--foreground-muted)] transition-colors">
                     <MoreVertical className="w-4 h-4" />
                   </button>
@@ -153,10 +178,10 @@ export default function NotesPage() {
                   onClick={() => setActiveNote(note)}
                   className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg bg-indigo-500/10 text-[var(--forge-indigo)] hover:bg-indigo-500 hover:text-white transition-all text-xs font-semibold border border-indigo-500/20"
                 >
-                  <Eye className="w-3.5 h-3.5" /> View Guide
+                  <Eye className="w-3.5 h-3.5" /> {note.isTextbook ? "View Notes" : "View Guide"}
                 </button>
                 <button 
-                  onClick={(e) => downloadHtmlFile(note, e)}
+                  onClick={(e) => note.isTextbook ? downloadTextFile(note, e) : downloadHtmlFile(note, e)}
                   className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg bg-[var(--surface-hover)] text-[var(--foreground-secondary)] hover:text-[var(--foreground)] transition-all text-xs font-semibold border border-[var(--border)]"
                 >
                   <Download className="w-3.5 h-3.5" /> Download
@@ -176,7 +201,7 @@ export default function NotesPage() {
         </div>
       )}
 
-      {/* Interactive Fullscreen HTML Study Guide Viewer Modal */}
+      {/* Note Viewer Modal */}
       <AnimatePresence>
         {activeNote && (
           <motion.div 
@@ -196,34 +221,50 @@ export default function NotesPage() {
                 </button>
                 <div>
                   <h2 className="text-sm font-bold text-white leading-tight font-mono">{activeNote.title}</h2>
-                  <span className="text-[10px] text-[#7A9AB8] uppercase tracking-wider font-semibold">Interactive HTML Guide</span>
+                  <span className="text-[10px] text-[#7A9AB8] uppercase tracking-wider font-semibold">
+                    {activeNote.isTextbook ? "📚 Textbook Notes" : "Interactive HTML Guide"}
+                  </span>
                 </div>
               </div>
 
               <div className="flex items-center gap-3">
                 <button 
-                  onClick={() => downloadHtmlFile(activeNote)}
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-500 transition-colors text-xs font-bold shadow-md shadow-emerald-900/10"
+                  onClick={() => activeNote.isTextbook ? downloadTextFile(activeNote) : downloadHtmlFile(activeNote)}
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg text-white hover:opacity-90 transition-colors text-xs font-bold shadow-md"
+                  style={{ background: activeNote.isTextbook ? "linear-gradient(135deg, #0EA5E9, #6366F1)" : "#059669" }}
                 >
-                  <Download className="w-4 h-4" /> Download HTML File
+                  <Download className="w-4 h-4" /> {activeNote.isTextbook ? "Download .txt" : "Download HTML"}
                 </button>
                 <button 
                   onClick={() => setActiveNote(null)}
                   className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#111B2E] text-white hover:bg-[#162035] border border-[#1E2F4A] transition-colors text-xs font-bold"
                 >
-                  Close Reader
+                  Close
                 </button>
               </div>
             </div>
 
-            {/* Modal Body / Iframe */}
-            <div className="flex-1 bg-[#06090F] relative">
-              <iframe 
-                srcDoc={activeNote.htmlContent}
-                title={activeNote.title}
-                className="w-full h-full border-none"
-                sandbox="allow-scripts"
-              />
+            {/* Modal Body */}
+            <div className="flex-1 bg-[#06090F] overflow-auto">
+              {activeNote.isTextbook ? (
+                /* Plain text viewer for textbook notes */
+                <div className="max-w-3xl mx-auto p-8">
+                  <pre
+                    className="whitespace-pre-wrap font-mono text-sm leading-relaxed"
+                    style={{ color: "#D8E8F5", fontFamily: "'JetBrains Mono', 'Fira Code', monospace" }}
+                  >
+                    {activeNote.textContent}
+                  </pre>
+                </div>
+              ) : (
+                /* HTML iframe viewer for PDF study guides */
+                <iframe 
+                  srcDoc={activeNote.htmlContent}
+                  title={activeNote.title}
+                  className="w-full h-full border-none"
+                  sandbox="allow-scripts"
+                />
+              )}
             </div>
           </motion.div>
         )}
