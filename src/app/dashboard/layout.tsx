@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "@/components/ThemeProvider";
+import ExamCountdown from "@/components/ExamCountdown";
 import {
   LayoutDashboard,
   FileText,
@@ -200,6 +201,9 @@ export default function DashboardLayout({
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Exam Countdown */}
+            <ExamCountdown />
+
             {/* Theme toggle */}
             <button
               onClick={toggleTheme}
