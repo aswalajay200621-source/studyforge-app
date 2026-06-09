@@ -1275,16 +1275,15 @@ export function generateStudyMaterials(fileName: string, fileSizeStr: string) {
 export function populateDefaultData() {
   if (typeof window === "undefined") return;
 
-  const currentUploads = localStorage.getItem("studyforge_uploads");
-  if (!currentUploads || JSON.parse(currentUploads).length === 0) {
-    const materials = generateStudyMaterials("Machine_Learning_Intro.pdf", "4.2 MB");
-    
-    localStorage.setItem("studyforge_uploads", JSON.stringify([materials.file]));
-    localStorage.setItem("studyforge_notes", JSON.stringify([materials.note]));
-    localStorage.setItem("studyforge_flashcards_decks", JSON.stringify([materials.deck]));
-    localStorage.setItem("studyforge_flashcards_cards", JSON.stringify(materials.cards));
-    localStorage.setItem("studyforge_quizzes", JSON.stringify([materials.quiz]));
-    localStorage.setItem("studyforge_questions", JSON.stringify(materials.questions));
+  const clearedKey = "studyforge_data_cleared_v2";
+  if (!localStorage.getItem(clearedKey)) {
+    localStorage.removeItem("studyforge_uploads");
+    localStorage.removeItem("studyforge_notes");
+    localStorage.removeItem("studyforge_flashcards_decks");
+    localStorage.removeItem("studyforge_flashcards_cards");
+    localStorage.removeItem("studyforge_quizzes");
+    localStorage.removeItem("studyforge_questions");
+    localStorage.setItem(clearedKey, "true");
   }
 }
 
