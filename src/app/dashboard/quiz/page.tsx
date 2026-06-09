@@ -2,12 +2,12 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Brain, Plus, Clock, AlertCircle, CheckCircle2, XCircle, RotateCcw, ChevronRight } from "lucide-react";
-
-const sampleQuizzes: any[] = [];
-const sampleQuestions: any[] = [];
+import { Brain, Plus, Clock, AlertCircle, CheckCircle2, XCircle, RotateCcw, ChevronRight, Upload } from "lucide-react";
+import Link from "next/link";
 
 export default function QuizPage() {
+  const [quizzes, setQuizzes] = useState<any[]>([]);
+  const [questions, setQuestions] = useState<any[]>([]);
   const [activeQuiz, setActiveQuiz] = useState<number | null>(null);
   const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
@@ -17,6 +17,17 @@ export default function QuizPage() {
   
   const [timeLeft, setTimeLeft] = useState(15 * 60); // 15 mins
 
+  useEffect(() => {
+    const storedQuizzes = localStorage.getItem("studyforge_quizzes");
+    const storedQuestions = localStorage.getItem("studyforge_questions");
+    if (storedQuizzes) {
+      setQuizzes(JSON.parse(storedQuizzes));
+    }
+    if (storedQuestions) {
+      setQuestions(JSON.parse(storedQuestions));
+    }
+  }, []);
+
   // Timer logic
   useEffect(() => {
     if (activeQuiz !== null && !quizFinished && timeLeft > 0) {
@@ -24,6 +35,8 @@ export default function QuizPage() {
       return () => clearInterval(timer);
     }
   }, [activeQuiz, quizFinished, timeLeft]);
+
+  const activeQuizQuestions = questions.filter(q => q.quizId === activeQuiz);
 
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60);
@@ -40,17 +53,27 @@ export default function QuizPage() {
     if (!selectedOption) return;
     
     setIsAnswered(true);
-    if (selectedOption === sampleQuestions[currentQuestionIdx].correctId) {
+    if (selectedOption === activeQuizQuestions[currentQuestionIdx].correctId) {
       setScore(prev => prev + 1);
     }
   };
 
   const handleNextQuestion = () => {
-    if (currentQuestionIdx < sampleQuestions.length - 1) {
+    if (currentQuestionIdx < activeQuizQuestions.length - 1) {
       setCurrentQuestionIdx(prev => prev + 1);
       setSelectedOption(null);
       setIsAnswered(false);
     } else {
+      // Save score to local storage for the quiz
+      const updatedQuizzes = quizzes.map(q => {
+        if (q.id === activeQuiz) {
+          const newScore = Math.round((score / activeQuizQuestions.length) * 100);
+          return { ...q, score: Math.max(q.score, newScore) };
+        }
+        return q;
+      });
+      setQuizzes(updatedQuizzes);
+      localStorage.setItem("studyforge_quizzes", JSON.stringify(updatedQuizzes));
       setQuizFinished(true);
     }
   };
@@ -67,7 +90,7 @@ export default function QuizPage() {
 
   // ------------------- QUIZ FINISHED VIEW -------------------
   if (quizFinished) {
-    const percentage = Math.round((score / sampleQuestions.length) * 100);
+    const percentage = Math.round((score / activeQuizQuestions.length) * 100);
     return (
       <div className="max-w-3xl mx-auto py-12 flex flex-col items-center">
         <h1 className="text-3xl font-bold mb-8" style={{ fontFamily: "var(--font-outfit)", color: "var(--foreground)" }}>
@@ -100,7 +123,7 @@ export default function QuizPage() {
               <div className="text-xs text-emerald-500/80 uppercase tracking-wider">Correct</div>
             </div>
             <div className="bg-red-500/10 rounded-xl p-3">
-              <div className="text-red-500 font-bold text-xl">{sampleQuestions.length - score}</div>
+              <div className="text-red-500 font-bold text-xl">{activeQuizQuestions.length - score}</div>
               <div className="text-xs text-red-500/80 uppercase tracking-wider">Incorrect</div>
             </div>
           </div>
@@ -119,8 +142,8 @@ export default function QuizPage() {
   }
 
   // ------------------- QUIZ TAKING VIEW -------------------
-  if (activeQuiz !== null) {
-    const question = sampleQuestions[currentQuestionIdx];
+  if (activeQuiz !== null && activeQuizQuestions.length > 0) {
+    const question = activeQuizQuestions[currentQuestionIdx];
     
     return (
       <div className="max-w-3xl mx-auto h-[calc(100vh-8rem)] flex flex-col">
@@ -128,7 +151,7 @@ export default function QuizPage() {
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <span className="text-sm font-semibold uppercase tracking-wider" style={{ color: "var(--foreground-muted)" }}>
-              Question {currentQuestionIdx + 1} of {sampleQuestions.length}
+              Question {currentQuestionIdx + 1} of {activeQuizQuestions.length}
             </span>
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg glass font-mono text-sm border" style={{ borderColor: "var(--border)", color: timeLeft < 60 ? "#EF4444" : "var(--foreground)" }}>
               <Clock className="w-4 h-4" /> {formatTime(timeLeft)}
@@ -138,7 +161,7 @@ export default function QuizPage() {
             <motion.div 
               className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-violet-600"
               initial={{ width: 0 }}
-              animate={{ width: `${((currentQuestionIdx) / sampleQuestions.length) * 100}%` }}
+              animate={{ width: `${((currentQuestionIdx) / activeQuizQuestions.length) * 100}%` }}
             />
           </div>
         </div>
@@ -220,7 +243,7 @@ export default function QuizPage() {
                 onClick={handleNextQuestion}
                 className="px-8 py-3 rounded-xl font-semibold text-white bg-gradient-to-r from-indigo-500 to-violet-600 hover:opacity-90 transition-opacity flex items-center gap-2 shadow-md"
               >
-                {currentQuestionIdx < sampleQuestions.length - 1 ? "Next Question" : "View Results"} <ChevronRight className="w-5 h-5" />
+                {currentQuestionIdx < activeQuizQuestions.length - 1 ? "Next Question" : "View Results"} <ChevronRight className="w-5 h-5" />
               </button>
             )}
           </div>
@@ -241,57 +264,72 @@ export default function QuizPage() {
             Test your knowledge with AI-generated multiple choice questions.
           </p>
         </div>
-        <button className="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-white bg-gradient-to-r from-indigo-500 to-violet-600 hover:opacity-90 transition-opacity shadow-md">
+        <Link href="/dashboard/upload" className="flex items-center gap-2 px-4 py-2.5 rounded-lg font-semibold text-white bg-gradient-to-r from-indigo-500 to-violet-600 hover:opacity-90 transition-opacity shadow-md">
           <Plus className="w-4 h-4" /> Generate Quiz
-        </button>
+        </Link>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {sampleQuizzes.map((quiz) => (
-          <motion.div 
-            key={quiz.id}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="glass rounded-xl p-5 card-lift border border-[var(--border)] flex flex-col"
-          >
-            <div className="flex justify-between items-start mb-4">
-              <div className="p-2 rounded-lg" style={{ background: `${quiz.color}15` }}>
-                <Brain className="w-5 h-5" style={{ color: quiz.color }} />
-              </div>
-              <span className="text-xs font-semibold px-2.5 py-1 rounded-full border bg-[var(--surface-hover)]" style={{ borderColor: "var(--border)", color: "var(--foreground)" }}>
-                {quiz.difficulty}
-              </span>
-            </div>
-            
-            <h3 className="text-lg font-bold mb-4 pr-4 leading-snug flex-1" style={{ fontFamily: "var(--font-outfit)", color: "var(--foreground)" }}>
-              {quiz.title}
-            </h3>
-            
-            <div className="grid grid-cols-3 gap-2 mb-6 text-center divide-x" style={{ borderColor: "var(--border)" }}>
-              <div>
-                <p className="text-xs uppercase tracking-wider mb-1" style={{ color: "var(--foreground-muted)" }}>Questions</p>
-                <p className="font-semibold text-sm" style={{ color: "var(--foreground)" }}>{quiz.questions}</p>
-              </div>
-              <div>
-                <p className="text-xs uppercase tracking-wider mb-1" style={{ color: "var(--foreground-muted)" }}>Time</p>
-                <p className="font-semibold text-sm" style={{ color: "var(--foreground)" }}>{quiz.time}</p>
-              </div>
-              <div>
-                <p className="text-xs uppercase tracking-wider mb-1" style={{ color: "var(--foreground-muted)" }}>Best</p>
-                <p className="font-semibold text-sm text-emerald-500">{quiz.score}%</p>
-              </div>
-            </div>
-
-            <button 
-              onClick={() => setActiveQuiz(quiz.id)}
-              className="w-full py-2.5 rounded-lg font-semibold bg-[var(--surface-hover)] hover:bg-indigo-500 hover:text-white border border-[var(--border)] hover:border-indigo-500 transition-all text-sm"
-              style={{ color: "var(--foreground)" }}
+      {quizzes.length === 0 ? (
+        <div className="text-center py-20 glass border rounded-2xl flex flex-col items-center justify-center" style={{ borderColor: "var(--border)" }}>
+          <div className="w-16 h-16 rounded-full bg-amber-500/10 flex items-center justify-center mb-4 text-amber-500">
+            <Brain className="w-8 h-8" />
+          </div>
+          <h3 className="text-xl font-bold mb-2" style={{ color: "var(--foreground)" }}>No Quizzes Found</h3>
+          <p className="max-w-md text-sm mb-6" style={{ color: "var(--foreground-secondary)" }}>
+            You haven't uploaded any PDF files yet. Upload a syllabus or textbook chapter to generate practice quizzes.
+          </p>
+          <Link href="/dashboard/upload" className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold text-white bg-gradient-to-r from-indigo-500 to-violet-600 hover:opacity-90 transition-opacity">
+            <Upload className="w-4 h-4" /> Upload Material
+          </Link>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {quizzes.map((quiz) => (
+            <motion.div 
+              key={quiz.id}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="glass rounded-xl p-5 card-lift border border-[var(--border)] flex flex-col"
             >
-              Start Quiz
-            </button>
-          </motion.div>
-        ))}
-      </div>
+              <div className="flex justify-between items-start mb-4">
+                <div className="p-2 rounded-lg" style={{ background: `${quiz.color}15` }}>
+                  <Brain className="w-5 h-5" style={{ color: quiz.color }} />
+                </div>
+                <span className="text-xs font-semibold px-2.5 py-1 rounded-full border bg-[var(--surface-hover)]" style={{ borderColor: "var(--border)", color: "var(--foreground)" }}>
+                  {quiz.difficulty}
+                </span>
+              </div>
+              
+              <h3 className="text-lg font-bold mb-4 pr-4 leading-snug flex-1" style={{ fontFamily: "var(--font-outfit)", color: "var(--foreground)" }}>
+                {quiz.title}
+              </h3>
+              
+              <div className="grid grid-cols-3 gap-2 mb-6 text-center divide-x" style={{ borderColor: "var(--border)" }}>
+                <div>
+                  <p className="text-xs uppercase tracking-wider mb-1" style={{ color: "var(--foreground-muted)" }}>Questions</p>
+                  <p className="font-semibold text-sm" style={{ color: "var(--foreground)" }}>{quiz.questions}</p>
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-wider mb-1" style={{ color: "var(--foreground-muted)" }}>Time</p>
+                  <p className="font-semibold text-sm" style={{ color: "var(--foreground)" }}>{quiz.time}</p>
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-wider mb-1" style={{ color: "var(--foreground-muted)" }}>Best</p>
+                  <p className="font-semibold text-sm text-emerald-500">{quiz.score}%</p>
+                </div>
+              </div>
+
+              <button 
+                onClick={() => { setActiveQuiz(quiz.id); setQuizFinished(false); setCurrentQuestionIdx(0); setScore(0); setSelectedOption(null); setIsAnswered(false); setTimeLeft(15 * 60); }}
+                className="w-full py-2.5 rounded-lg font-semibold bg-[var(--surface-hover)] hover:bg-indigo-500 hover:text-white border border-[var(--border)] hover:border-indigo-500 transition-all text-sm"
+                style={{ color: "var(--foreground)" }}
+              >
+                Start Quiz
+              </button>
+            </motion.div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

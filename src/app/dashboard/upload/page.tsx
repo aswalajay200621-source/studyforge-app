@@ -1,16 +1,40 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Upload as UploadIcon, FileText, CheckCircle2, AlertCircle, File, FileCode, Layers, Brain, ArrowRight } from "lucide-react";
 import Link from "next/link";
-
-const recentUploads: any[] = [];
+import { generateStudyMaterials } from "@/lib/generator";
 
 export default function UploadPage() {
   const [isDragging, setIsDragging] = useState(false);
   const [uploadState, setUploadState] = useState<"idle" | "uploading" | "processing" | "success">("idle");
   const [progress, setProgress] = useState(0);
+  const [selectedFile, setSelectedFile] = useState<{ name: string; size: string } | null>(null);
+  const [recentUploads, setRecentUploads] = useState<any[]>([]);
+  const [storagePercentage, setStoragePercentage] = useState(0);
+  const [storageMb, setStorageMb] = useState(0);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Load recent uploads
+  useEffect(() => {
+    const loadUploads = () => {
+      const uploadsRaw = localStorage.getItem("studyforge_uploads");
+      if (uploadsRaw) {
+        const parsed = JSON.parse(uploadsRaw);
+        setRecentUploads(parsed);
+        // Calculate storage usage (just a mock representation based on actual list length or mock sizes)
+        const totalMb = parsed.reduce((acc: number, item: any) => {
+          const val = parseFloat(item.size);
+          return acc + (isNaN(val) ? 1.5 : val);
+        }, 0);
+        setStorageMb(Math.round(totalMb * 10) / 10);
+        setStoragePercentage(Math.min(Math.round((totalMb / 1000) * 100), 100));
+      }
+    };
+    loadUploads();
+  }, [uploadState]);
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -21,15 +45,47 @@ export default function UploadPage() {
     setIsDragging(false);
   };
 
+  const formatBytes = (bytes: number, decimals = 1) => {
+    if (bytes === 0) return "0 Bytes";
+    const k = 1024;
+    const dm = decimals < 0 ? 0 : decimals;
+    const sizes = ["Bytes", "KB", "MB", "GB", "TB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + " " + sizes[i];
+  };
+
+  const handleFile = (file: globalThis.File) => {
+    if (file && file.type === "application/pdf") {
+      setSelectedFile({
+        name: file.name,
+        size: formatBytes(file.size),
+      });
+      startUploadFlow(file.name, formatBytes(file.size));
+    } else {
+      alert("Please upload a PDF file.");
+    }
+  };
+
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-    simulateUpload();
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      handleFile(e.dataTransfer.files[0]);
+    }
   };
 
-  const simulateUpload = () => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      handleFile(e.target.files[0]);
+    }
+  };
+
+  const triggerFileSelect = () => {
     if (uploadState !== "idle") return;
-    
+    fileInputRef.current?.click();
+  };
+
+  const startUploadFlow = (name: string, sizeStr: string) => {
     setUploadState("uploading");
     setProgress(0);
     
@@ -38,16 +94,47 @@ export default function UploadPage() {
         if (prev >= 100) {
           clearInterval(interval);
           setUploadState("processing");
-          setTimeout(() => setUploadState("success"), 2500);
+          
+          // Generate and save materials in the background after progress reaches 100
+          setTimeout(() => {
+            const materials = generateStudyMaterials(name, sizeStr);
+            
+            // Save to localStorage
+            const existingUploads = JSON.parse(localStorage.getItem("studyforge_uploads") || "[]");
+            const existingNotes = JSON.parse(localStorage.getItem("studyforge_notes") || "[]");
+            const existingDecks = JSON.parse(localStorage.getItem("studyforge_flashcards_decks") || "[]");
+            const existingCards = JSON.parse(localStorage.getItem("studyforge_flashcards_cards") || "[]");
+            const existingQuizzes = JSON.parse(localStorage.getItem("studyforge_quizzes") || "[]");
+            const existingQuestions = JSON.parse(localStorage.getItem("studyforge_questions") || "[]");
+
+            localStorage.setItem("studyforge_uploads", JSON.stringify([materials.file, ...existingUploads]));
+            localStorage.setItem("studyforge_notes", JSON.stringify([materials.note, ...existingNotes]));
+            localStorage.setItem("studyforge_flashcards_decks", JSON.stringify([materials.deck, ...existingDecks]));
+            localStorage.setItem("studyforge_flashcards_cards", JSON.stringify([...materials.cards, ...existingCards]));
+            localStorage.setItem("studyforge_quizzes", JSON.stringify([materials.quiz, ...existingQuizzes]));
+            localStorage.setItem("studyforge_questions", JSON.stringify([...materials.questions, ...existingQuestions]));
+
+            setUploadState("success");
+          }, 2000);
+          
           return 100;
         }
-        return prev + 5;
+        return prev + 10;
       });
-    }, 100);
+    }, 150);
   };
 
   return (
     <div className="max-w-5xl mx-auto space-y-8">
+      {/* Hidden File Input */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileChange}
+        accept="application/pdf"
+        className="hidden"
+      />
+
       {/* Header */}
       <div>
         <h1 className="text-2xl lg:text-3xl font-bold" style={{ fontFamily: "var(--font-outfit)", color: "var(--foreground)" }}>
@@ -68,7 +155,7 @@ export default function UploadPage() {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className={`border-2 border-dashed rounded-2xl p-12 text-center transition-all ${
+                className={`border-2 border-dashed rounded-2xl p-12 text-center transition-all cursor-pointer ${
                   isDragging 
                     ? "border-indigo-500 bg-indigo-500/5" 
                     : "border-[var(--border)] bg-[var(--surface)] hover:bg-[var(--surface-hover)]"
@@ -76,7 +163,7 @@ export default function UploadPage() {
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
-                onClick={simulateUpload}
+                onClick={triggerFileSelect}
               >
                 <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-indigo-500/20 to-violet-500/20 flex items-center justify-center mb-6">
                   <UploadIcon className={`w-10 h-10 ${isDragging ? "text-indigo-500 animate-bounce" : "text-[var(--forge-indigo)]"}`} />
@@ -112,7 +199,7 @@ export default function UploadPage() {
                       strokeDasharray="276" 
                       strokeDashoffset={276 - (276 * progress) / 100}
                       strokeLinecap="round"
-                      style={{ transition: "stroke-dashoffset 0.1s linear" }}
+                      style={{ transition: "stroke-dashoffset 0.15s linear" }}
                     />
                   </svg>
                   <div className="absolute inset-0 flex items-center justify-center">
@@ -123,10 +210,15 @@ export default function UploadPage() {
                 <h3 className="text-xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 to-violet-600 animate-pulse">
                   {uploadState === "uploading" ? "Uploading Document..." : "AI is Analyzing Content..."}
                 </h3>
+                {selectedFile && (
+                  <p className="text-xs font-mono font-bold mb-3 truncate max-w-md mx-auto" style={{ color: "var(--forge-indigo)" }}>
+                    {selectedFile.name} ({selectedFile.size})
+                  </p>
+                )}
                 <p className="text-sm" style={{ color: "var(--foreground-muted)" }}>
                   {uploadState === "uploading" 
                     ? "Please wait while we securely upload your file." 
-                    : "Extracting text, generating summaries, and creating knowledge graphs."}
+                    : "Extracting text, generating summaries, and creating study tools."}
                 </p>
               </motion.div>
             )}
@@ -145,7 +237,12 @@ export default function UploadPage() {
                 <h3 className="text-2xl font-bold mb-2 text-emerald-500">
                   Processing Complete!
                 </h3>
-                <p className="mb-8" style={{ color: "var(--foreground-secondary)" }}>
+                {selectedFile && (
+                  <p className="text-sm font-semibold mb-4" style={{ color: "var(--foreground)" }}>
+                    Successfully processed: <span className="font-mono text-xs font-bold px-2 py-1 rounded bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">{selectedFile.name}</span>
+                  </p>
+                )}
+                <p className="mb-8 text-sm" style={{ color: "var(--foreground-secondary)" }}>
                   Your document has been successfully analyzed. What would you like to do next?
                 </p>
                 
@@ -171,7 +268,7 @@ export default function UploadPage() {
                 </div>
 
                 <button 
-                  onClick={() => setUploadState("idle")}
+                  onClick={() => { setUploadState("idle"); setSelectedFile(null); }}
                   className="mt-8 text-sm font-medium hover:underline text-[var(--foreground-muted)] hover:text-[var(--foreground)] transition-colors"
                 >
                   Upload another file
@@ -189,11 +286,14 @@ export default function UploadPage() {
               <FileCode className="w-4 h-4 text-indigo-500" /> Storage Usage
             </h3>
             <div className="flex justify-between text-sm mb-2">
-              <span style={{ color: "var(--foreground-muted)" }}>0 MB / 1 GB</span>
-              <span className="font-medium" style={{ color: "var(--foreground)" }}>0%</span>
+              <span style={{ color: "var(--foreground-muted)" }}>{storageMb} MB / 1 GB</span>
+              <span className="font-medium" style={{ color: "var(--foreground)" }}>{storagePercentage}%</span>
             </div>
             <div className="w-full h-2 rounded-full bg-[var(--surface-hover)]">
-              <div className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-violet-600 w-[0%]" />
+              <div 
+                className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-violet-600 transition-all duration-500" 
+                style={{ width: `${storagePercentage}%` }}
+              />
             </div>
             <p className="text-xs mt-4" style={{ color: "var(--foreground-muted)" }}>
               <AlertCircle className="w-3 h-3 inline mr-1" />
@@ -208,26 +308,32 @@ export default function UploadPage() {
                 <FileText className="w-4 h-4 text-violet-500" /> Recent Uploads
               </h3>
             </div>
-            <div className="space-y-3">
-              {recentUploads.map((file) => (
-                <div key={file.id} className="flex items-start gap-3 p-3 rounded-lg hover:bg-[var(--surface-hover)] transition-colors group cursor-pointer border border-transparent hover:border-[var(--border)]">
-                  <div className="p-2 rounded-lg bg-red-500/10 text-red-500 shrink-0">
-                    <File className="w-4 h-4" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium truncate" style={{ color: "var(--foreground)" }}>{file.name}</p>
-                    <div className="flex items-center gap-2 text-xs mt-1" style={{ color: "var(--foreground-muted)" }}>
-                      <span>{file.date}</span>
-                      <span>•</span>
-                      <span>{file.size}</span>
+            <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
+              {recentUploads.length === 0 ? (
+                <p className="text-xs text-center py-6" style={{ color: "var(--foreground-muted)" }}>
+                  No uploaded files yet.
+                </p>
+              ) : (
+                recentUploads.map((file) => (
+                  <div key={file.id} className="flex items-start gap-3 p-3 rounded-lg hover:bg-[var(--surface-hover)] transition-colors group border border-transparent hover:border-[var(--border)]">
+                    <div className="p-2 rounded-lg bg-red-500/10 text-red-500 shrink-0">
+                      <File className="w-4 h-4" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium truncate" style={{ color: "var(--foreground)" }}>{file.name}</p>
+                      <div className="flex items-center gap-2 text-xs mt-1" style={{ color: "var(--foreground-muted)" }}>
+                        <span>{file.date}</span>
+                        <span>•</span>
+                        <span>{file.size}</span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
-            <button className="w-full mt-4 py-2 text-sm font-medium hover:bg-[var(--surface-hover)] rounded-lg transition-colors text-[var(--forge-indigo)] flex items-center justify-center gap-1">
+            <Link href="/dashboard/notes" className="w-full mt-4 py-2 text-sm font-medium hover:bg-[var(--surface-hover)] rounded-lg transition-colors text-[var(--forge-indigo)] flex items-center justify-center gap-1">
               View all files <ArrowRight className="w-3 h-3" />
-            </button>
+            </Link>
           </div>
         </div>
       </div>
