@@ -7,14 +7,9 @@ import {
   Layers,
   Brain,
   Upload,
-  Clock,
-  BookOpen,
   CheckCircle2,
   Target,
-  ArrowUpRight,
-  Calendar,
   File,
-  Zap,
 } from "lucide-react";
 import Link from "next/link";
 import { populateDefaultData } from "@/lib/generator";
@@ -114,22 +109,13 @@ export default function DashboardPage() {
   return (
     <motion.div initial="initial" animate="animate" variants={stagger.container} className="space-y-6">
       {/* Welcome Header */}
-      <motion.div variants={stagger.item} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl lg:text-3xl font-bold" style={{ fontFamily: "var(--font-outfit)", color: "var(--foreground)" }}>
-            Welcome back, Student! 👋
-          </h1>
-          <p className="text-sm mt-1" style={{ color: "var(--foreground-secondary)" }}>
-            Here&apos;s your study overview for today
-          </p>
-        </div>
-        <Link
-          href="/dashboard/upload"
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold text-white bg-gradient-to-r from-indigo-500 to-violet-600 hover:opacity-90 transition-opacity shadow-md"
-        >
-          <Upload className="w-4 h-4" />
-          Upload Material
-        </Link>
+      <motion.div variants={stagger.item}>
+        <h1 className="text-2xl lg:text-3xl font-bold" style={{ fontFamily: "var(--font-outfit)", color: "var(--foreground)" }}>
+          Welcome back, Student! 👋
+        </h1>
+        <p className="text-sm mt-1" style={{ color: "var(--foreground-secondary)" }}>
+          Here&apos;s your study overview for today
+        </p>
       </motion.div>
 
       {/* Quick Actions */}
@@ -155,58 +141,8 @@ export default function DashboardPage() {
         </div>
       </motion.div>
 
-      {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Study Progress */}
-        <motion.div variants={stagger.item} className="lg:col-span-2 glass rounded-xl p-5">
-          <div className="flex items-center justify-between mb-5">
-            <h2 className="text-lg font-bold" style={{ fontFamily: "var(--font-outfit)", color: "var(--foreground)" }}>
-              Subject Progress
-            </h2>
-            <Link href="/dashboard/progress" className="text-xs font-medium text-[var(--forge-indigo)] hover:underline">
-              View all
-            </Link>
-          </div>
-          {subjects.length === 0 ? (
-            <p className="text-sm text-center py-12" style={{ color: "var(--foreground-muted)" }}>
-              No subject progress recorded yet. Upload files to get started!
-            </p>
-          ) : (
-            <div className="space-y-4">
-              {subjects.map((subject) => (
-                <div key={subject.name}>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2.5 h-2.5 rounded-full" style={{ background: subject.color }} />
-                      <span className="text-sm font-medium" style={{ color: "var(--foreground)" }}>
-                        {subject.name}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <span className="text-xs" style={{ color: "var(--foreground-muted)" }}>
-                        {subject.notes} notes
-                      </span>
-                      <span className="text-sm font-semibold" style={{ color: subject.color }}>
-                        {subject.progress}%
-                      </span>
-                    </div>
-                  </div>
-                  <div className="w-full h-2 rounded-full" style={{ background: "var(--surface)" }}>
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: `${subject.progress}%` }}
-                      transition={{ duration: 1, ease: "easeOut", delay: 0.3 }}
-                      className="h-full rounded-full"
-                      style={{ background: subject.color }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </motion.div>
-
-        {/* Today's Goals */}
+      {/* Today's Goals */}
+      <div className="grid grid-cols-1 gap-6">
         <motion.div variants={stagger.item} className="glass rounded-xl p-5">
           <div className="flex items-center justify-between mb-5">
             <h2 className="text-lg font-bold" style={{ fontFamily: "var(--font-outfit)", color: "var(--foreground)" }}>
