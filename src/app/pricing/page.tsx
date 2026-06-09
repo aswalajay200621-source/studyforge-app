@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, type Variants } from "framer-motion";
 import Link from "next/link";
 import { Check, X, Sparkles, Zap, Crown, ChevronDown } from "lucide-react";
 import Navbar from "@/components/Navbar";
@@ -124,28 +124,30 @@ const faqs: FaqItem[] = [
 /*  Animation variants                                                 */
 /* ------------------------------------------------------------------ */
 
-const containerVariants = {
+const easeOutExpo = [0.22, 1, 0.36, 1] as const;
+
+const containerVariants: Variants = {
   hidden: {},
   visible: {
     transition: { staggerChildren: 0.12 },
   },
 };
 
-const cardVariants = {
+const cardVariants: Variants = {
   hidden: { opacity: 0, y: 40 },
   visible: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] },
+    transition: { duration: 0.6, ease: easeOutExpo },
   },
 };
 
-const fadeUp = {
+const fadeUp: Variants = {
   hidden: { opacity: 0, y: 24 },
   visible: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] },
+    transition: { duration: 0.5, ease: easeOutExpo },
   },
 };
 
