@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -16,8 +16,8 @@ const updateNoteSchema = z.object({
 
 // GET a single note
 export async function GET(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -29,11 +29,11 @@ export async function GET(
       );
     }
 
-    const { id } = await params;
+    const params = await context.params;
 
     const note = await prisma.note.findFirst({
       where: {
-        id,
+        id: params.id,
         userId: session.user.id,
       },
     });
@@ -57,8 +57,8 @@ export async function GET(
 
 // PUT update a note
 export async function PUT(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -70,14 +70,14 @@ export async function PUT(
       );
     }
 
-    const { id } = await params;
+    const params = await context.params;
     const body = await request.json();
     const validatedData = updateNoteSchema.parse(body);
 
     // Check if note exists and belongs to user
     const existingNote = await prisma.note.findFirst({
       where: {
-        id,
+        id: params.id,
         userId: session.user.id,
       },
     });
@@ -90,7 +90,7 @@ export async function PUT(
     }
 
     const note = await prisma.note.update({
-      where: { id },
+      where: { id: params.id },
       data: validatedData,
     });
 
@@ -113,8 +113,8 @@ export async function PUT(
 
 // DELETE a note
 export async function DELETE(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -126,12 +126,12 @@ export async function DELETE(
       );
     }
 
-    const { id } = await params;
+    const params = await context.params;
 
     // Check if note exists and belongs to user
     const existingNote = await prisma.note.findFirst({
       where: {
-        id,
+        id: params.id,
         userId: session.user.id,
       },
     });
@@ -144,7 +144,7 @@ export async function DELETE(
     }
 
     await prisma.note.delete({
-      where: { id },
+      where: { id: params.id },
     });
 
     return NextResponse.json(

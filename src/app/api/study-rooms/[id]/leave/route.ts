@@ -1,12 +1,12 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 // POST leave a study room
 export async function POST(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -18,14 +18,14 @@ export async function POST(
       );
     }
 
-    const { id } = await params;
+    const params = await context.params;
 
     // Check if user is a member
     const member = await prisma.studyRoomMember.findUnique({
       where: {
         userId_roomId: {
           userId: session.user.id,
-          roomId: id,
+          roomId: params.id,
         },
       },
     });
@@ -50,7 +50,7 @@ export async function POST(
     // Check if room is empty (no online members)
     const onlineMembers = await prisma.studyRoomMember.count({
       where: {
-        roomId: id,
+        roomId: params.id,
         isOnline: true,
       },
     });
@@ -58,7 +58,7 @@ export async function POST(
     // If no online members, deactivate the room
     if (onlineMembers === 0) {
       await prisma.studyRoom.update({
-        where: { id },
+        where: { id: params.id },
         data: { isActive: false },
       });
     }

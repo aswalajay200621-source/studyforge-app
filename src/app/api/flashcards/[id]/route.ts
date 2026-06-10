@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -17,9 +17,10 @@ const updateFlashcardSchema = z.object({
 
 // GET a single flashcard set
 export async function GET(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
 ) {
+  const params = await context.params;
   try {
     const session = await getServerSession(authOptions);
 
@@ -30,11 +31,9 @@ export async function GET(
       );
     }
 
-    const { id } = await params;
-
     const flashcard = await prisma.flashcard.findFirst({
       where: {
-        id,
+        id: params.id,
         userId: session.user.id,
       },
     });
@@ -58,8 +57,8 @@ export async function GET(
 
 // PUT update a flashcard set
 export async function PUT(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -71,13 +70,13 @@ export async function PUT(
       );
     }
 
-    const { id } = await params;
+    const params = await context.params;
     const body = await request.json();
     const validatedData = updateFlashcardSchema.parse(body);
 
     const existingFlashcard = await prisma.flashcard.findFirst({
       where: {
-        id,
+        id: params.id,
         userId: session.user.id,
       },
     });
@@ -90,7 +89,7 @@ export async function PUT(
     }
 
     const flashcard = await prisma.flashcard.update({
-      where: { id },
+      where: { id: params.id },
       data: validatedData,
     });
 
@@ -113,8 +112,8 @@ export async function PUT(
 
 // DELETE a flashcard set
 export async function DELETE(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -126,11 +125,11 @@ export async function DELETE(
       );
     }
 
-    const { id } = await params;
+    const params = await context.params;
 
     const existingFlashcard = await prisma.flashcard.findFirst({
       where: {
-        id,
+        id: params.id,
         userId: session.user.id,
       },
     });
@@ -143,7 +142,7 @@ export async function DELETE(
     }
 
     await prisma.flashcard.delete({
-      where: { id },
+      where: { id: params.id },
     });
 
     return NextResponse.json(

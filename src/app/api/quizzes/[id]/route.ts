@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -21,8 +21,8 @@ const updateQuizSchema = z.object({
 
 // GET a single quiz
 export async function GET(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -34,11 +34,11 @@ export async function GET(
       );
     }
 
-    const { id } = await params;
+    const params = await context.params;
 
     const quiz = await prisma.quiz.findFirst({
       where: {
-        id,
+        id: params.id,
         userId: session.user.id,
       },
     });
@@ -62,8 +62,8 @@ export async function GET(
 
 // PUT update a quiz
 export async function PUT(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -75,13 +75,13 @@ export async function PUT(
       );
     }
 
-    const { id } = await params;
+    const params = await context.params;
     const body = await request.json();
     const validatedData = updateQuizSchema.parse(body);
 
     const existingQuiz = await prisma.quiz.findFirst({
       where: {
-        id,
+        id: params.id,
         userId: session.user.id,
       },
     });
@@ -94,7 +94,7 @@ export async function PUT(
     }
 
     const quiz = await prisma.quiz.update({
-      where: { id },
+      where: { id: params.id },
       data: validatedData,
     });
 
@@ -117,8 +117,8 @@ export async function PUT(
 
 // DELETE a quiz
 export async function DELETE(
-  request: Request,
-  { params }: { params: { id: string } }
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -129,6 +129,8 @@ export async function DELETE(
         { status: 401 }
       );
     }
+
+    const params = await context.params;
 
     const existingQuiz = await prisma.quiz.findFirst({
       where: {

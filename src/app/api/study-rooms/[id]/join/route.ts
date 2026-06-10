@@ -1,12 +1,12 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 // POST join a study room
 export async function POST(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -18,11 +18,11 @@ export async function POST(
       );
     }
 
-    const { id } = await params;
+    const params = await context.params;
 
     // Check if room exists and is active
     const room = await prisma.studyRoom.findUnique({
-      where: { id },
+      where: { id: params.id },
       include: {
         _count: {
           select: {
@@ -59,7 +59,7 @@ export async function POST(
       where: {
         userId_roomId: {
           userId: session.user.id,
-          roomId: id,
+          roomId: params.id,
         },
       },
     });
@@ -85,7 +85,7 @@ export async function POST(
     await prisma.studyRoomMember.create({
       data: {
         userId: session.user.id,
-        roomId: id,
+        roomId: params.id,
         role: "member",
       },
     });

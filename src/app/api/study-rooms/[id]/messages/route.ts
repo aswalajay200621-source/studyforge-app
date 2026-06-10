@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -10,8 +10,8 @@ const messageSchema = z.object({
 
 // GET messages for a study room
 export async function GET(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -23,14 +23,14 @@ export async function GET(
       );
     }
 
-    const { id } = await params;
+    const params = await context.params;
 
     // Check if user is a member of the room
     const member = await prisma.studyRoomMember.findUnique({
       where: {
         userId_roomId: {
           userId: session.user.id,
-          roomId: id,
+          roomId: params.id,
         },
       },
     });
@@ -44,7 +44,7 @@ export async function GET(
 
     const messages = await prisma.studyRoomMessage.findMany({
       where: {
-        roomId: id,
+        roomId: params.id,
       },
       orderBy: {
         createdAt: "asc",
@@ -64,8 +64,8 @@ export async function GET(
 
 // POST send a message to a study room
 export async function POST(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -77,14 +77,14 @@ export async function POST(
       );
     }
 
-    const { id } = await params;
+    const params = await context.params;
 
     // Check if user is a member of the room
     const member = await prisma.studyRoomMember.findUnique({
       where: {
         userId_roomId: {
           userId: session.user.id,
-          roomId: id,
+          roomId: params.id,
         },
       },
       include: {
@@ -108,7 +108,7 @@ export async function POST(
 
     const message = await prisma.studyRoomMessage.create({
       data: {
-        roomId: id,
+        roomId: params.id,
         userId: session.user.id,
         userName: member.user.name || "Anonymous",
         message: validatedData.message,
