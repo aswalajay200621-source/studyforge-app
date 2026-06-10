@@ -64,7 +64,7 @@ export default function UploadPage() {
         return;
       }
       setSelectedFile({ name: file.name, size: sizeFormatted });
-      startUploadFlow(file.name, sizeFormatted);
+      startUploadFlow(file, file.name, sizeFormatted);
     } else {
       alert("Please upload a PDF file.");
     }
@@ -568,7 +568,156 @@ ${"-".repeat(60)}
 `;
   };
 
-  const startUploadFlow = (name: string, sizeStr: string) => {
+  const startUploadFlow = async (file: globalThis.File, name: string, sizeStr: string) => {
+    setUploadState("uploading");
+    setProgress(0);
+
+    try {
+      // Create FormData for file upload
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('useOpenAI', 'true'); // Try OpenAI first, will fallback to HuggingFace or template
+
+      // Simulate upload progress
+      const uploadInterval = setInterval(() => {
+        setProgress((prev) => {
+          if (prev >= 30) {
+            clearInterval(uploadInterval);
+            return 30;
+          }
+          return prev + 5;
+        });
+      }, 200);
+
+      // Call the AI-powered PDF processing API
+      console.log('🚀 Uploading PDF to AI processing endpoint...');
+      const response = await fetch('/api/process-pdf', {
+        method: 'POST',
+        body: formData,
+      });
+
+      clearInterval(uploadInterval);
+      setProgress(40);
+      setUploadState("processing");
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('✅ PDF processing complete:', result);
+
+      // Simulate processing progress
+      const processingInterval = setInterval(() => {
+        setProgress((prev) => {
+          if (prev >= 90) {
+            clearInterval(processingInterval);
+            return 90;
+          }
+          return prev + 10;
+        });
+      }, 300);
+
+      // Wait for processing animation
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      clearInterval(processingInterval);
+      setProgress(100);
+
+      if (result.success && result.data) {
+        const { notes, flashcards, quizQuestions, metadata } = result.data;
+        
+        const existingUploads = JSON.parse(localStorage.getItem("studyforge_uploads") || "[]");
+        const existingNotes = JSON.parse(localStorage.getItem("studyforge_notes") || "[]");
+        const id = `note-${Date.now()}`;
+        const fileId = `file-${Date.now()}`;
+        const today = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+        const { subject, color } = detectSubject(name);
+
+        console.log('📝 Saving AI-generated content to localStorage...');
+        console.log('Notes word count:', metadata.wordCount);
+        console.log('Flashcards:', flashcards.length);
+        console.log('Quiz questions:', quizQuestions.length);
+
+        if (uploadMode === "textbook") {
+          // Textbook mode: save plain text notes
+          const textbookNote = {
+            id,
+            fileId,
+            subject,
+            color,
+            title: name.replace(/\.pdf$/i, "").replace(/[_-]/g, " "),
+            preview: `AI-generated textbook notes — ${subject} — ${metadata.wordCount} words — ${metadata.pages} pages extracted`,
+            words: metadata.wordCount,
+            date: today,
+            htmlContent: "",
+            textContent: notes,
+            isTextbook: true,
+            aiGenerated: true as any,
+          };
+          const fileEntry = { id: fileId, name, size: sizeStr, date: today, isTextbook: true };
+          localStorage.setItem("studyforge_uploads", JSON.stringify([fileEntry, ...existingUploads]));
+          localStorage.setItem("studyforge_notes", JSON.stringify([textbookNote, ...existingNotes]));
+        } else {
+          // Regular PDF mode: save notes, flashcards, and quizzes
+          const materials = generateStudyMaterials(name, sizeStr);
+          
+          // Override with AI-generated content
+          materials.note.textContent = notes;
+          materials.note.words = metadata.wordCount;
+          materials.note.preview = `AI-generated notes — ${subject} — ${metadata.wordCount} words`;
+          (materials.note as any).aiGenerated = true;
+          
+          // Use AI-generated flashcards if available
+          if (flashcards && flashcards.length > 0) {
+            materials.cards = flashcards.map((card: any, idx: number) => ({
+              id: `card-${Date.now()}-${idx}`,
+              deckId: materials.deck.id,
+              front: card.front,
+              back: card.back,
+              mastered: false,
+            }));
+          }
+          
+          // Use AI-generated quiz questions if available
+          if (quizQuestions && quizQuestions.length > 0) {
+            materials.questions = quizQuestions.map((q: any, idx: number) => ({
+              id: `q-${Date.now()}-${idx}`,
+              quizId: materials.quiz.id,
+              question: q.question,
+              options: q.options,
+              correctAnswer: q.correctAnswer,
+              explanation: q.explanation,
+            }));
+          }
+
+          const existingDecks = JSON.parse(localStorage.getItem("studyforge_flashcards_decks") || "[]");
+          const existingCards = JSON.parse(localStorage.getItem("studyforge_flashcards_cards") || "[]");
+          const existingQuizzes = JSON.parse(localStorage.getItem("studyforge_quizzes") || "[]");
+          const existingQuestions = JSON.parse(localStorage.getItem("studyforge_questions") || "[]");
+          
+          localStorage.setItem("studyforge_uploads", JSON.stringify([materials.file, ...existingUploads]));
+          localStorage.setItem("studyforge_notes", JSON.stringify([materials.note, ...existingNotes]));
+          localStorage.setItem("studyforge_flashcards_decks", JSON.stringify([materials.deck, ...existingDecks]));
+          localStorage.setItem("studyforge_flashcards_cards", JSON.stringify([...materials.cards, ...existingCards]));
+          localStorage.setItem("studyforge_quizzes", JSON.stringify([materials.quiz, ...existingQuizzes]));
+          localStorage.setItem("studyforge_questions", JSON.stringify([...materials.questions, ...existingQuestions]));
+        }
+
+        console.log('✅ Content saved successfully!');
+        setUploadState("success");
+      } else {
+        throw new Error('Invalid response from API');
+      }
+    } catch (error) {
+      console.error('❌ PDF processing failed:', error);
+      alert('Failed to process PDF. Please try again or check console for details.');
+      setUploadState("idle");
+      setProgress(0);
+    }
+  };
+
+  // Keep the old mock generation function for fallback
+  const startUploadFlowOld = (name: string, sizeStr: string) => {
     setUploadState("uploading");
     setProgress(0);
 
@@ -591,14 +740,21 @@ ${"-".repeat(60)}
               const fileId = `file_${Date.now()}`;
               const today = new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
               const generatedNotes = generateTextbookNotes(name);
-              const wordCount = generatedNotes.split(/\s+/).length;
+              const wordCount = generatedNotes.split(/\s+/).filter(w => w.length > 0).length;
+              
+              console.log('=== TEXTBOOK NOTE GENERATION ===');
+              console.log('File name:', name);
+              console.log('Generated notes length:', generatedNotes.length);
+              console.log('Word count:', wordCount);
+              console.log('First 500 chars:', generatedNotes.substring(0, 500));
+              
               const textbookNote = {
                 id,
                 fileId,
                 subject,
                 color,
                 title: name.replace(/\.pdf$/i, "").replace(/[_-]/g, " "),
-                preview: `Comprehensive textbook notes — ${subject} — detailed chapters with examples, definitions, and historical context`,
+                preview: `Comprehensive textbook notes — ${subject} — ${wordCount} words — detailed chapters with examples, definitions, and historical context`,
                 words: wordCount,
                 date: today,
                 htmlContent: "", // no HTML

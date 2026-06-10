@@ -2,9 +2,10 @@
 
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Search, Bookmark, MoreVertical, FileText, ChevronDown, Upload, Download, Eye, X, BookOpen, Sparkles, RefreshCw, Layers, Brain, Volume2, VolumeX, Pause, Play, SkipForward, SkipBack, Settings as SettingsIcon, Trash2 } from "lucide-react";
+import { Plus, Search, Bookmark, MoreVertical, FileText, ChevronDown, Upload, Download, Eye, X, BookOpen, Sparkles, RefreshCw, Layers, Brain, Volume2, VolumeX, Pause, Play, SkipForward, SkipBack, Settings as SettingsIcon, Trash2, Palette } from "lucide-react";
 import Link from "next/link";
 import { convertHtmlToText, convertTextToHtml } from "@/lib/generator";
+import { themes, getThemeById, getThemeForSubject, generateThemedHtml, type Theme } from "@/lib/themes";
 
 export default function NotesPage() {
   const [notes, setNotes] = useState<any[]>([]);
@@ -15,6 +16,10 @@ export default function NotesPage() {
   // State for format viewer toggles and conversion animations
   const [viewMode, setViewMode] = useState<"html" | "text">("text");
   const [isConverting, setIsConverting] = useState(false);
+  
+  // Theme state
+  const [selectedTheme, setSelectedTheme] = useState<Theme>(themes[0]);
+  const [showThemeSelector, setShowThemeSelector] = useState(false);
 
   // Text-to-Speech states
   const [isPlaying, setIsPlaying] = useState(false);
@@ -58,6 +63,10 @@ export default function NotesPage() {
       
       // Stop any ongoing speech when switching notes
       stopSpeech();
+      
+      // Set theme based on subject
+      const suggestedTheme = getThemeForSubject(activeNote.subject || 'General');
+      setSelectedTheme(suggestedTheme);
       
       // Auto-extract textContent on-the-fly for any legacy notes that don't have it
       if (!activeNote.textContent && activeNote.htmlContent) {
@@ -198,17 +207,58 @@ export default function NotesPage() {
     URL.revokeObjectURL(url);
   };
 
-  // Triggers dynamic Textbook plain text to HTML guide conversion
+  // Triggers dynamic Textbook plain text to HTML guide conversion with theme
   const handleConvertToHtml = () => {
     if (!activeNote) return;
     setIsConverting(true);
     
     setTimeout(() => {
-      const generatedHtml = convertTextToHtml(
+      // Convert text content to formatted HTML with proper structure
+      const formattedContent = activeNote.textContent
+        .split('\n\n')
+        .map((para: string) => {
+          // Check if it's a heading
+          if (para.startsWith('# ')) {
+            return `<h2>${para.substring(2)}</h2>`;
+          } else if (para.startsWith('## ')) {
+            return `<h3>${para.substring(3)}</h3>`;
+          } else if (para.startsWith('### ')) {
+            return `<h4>${para.substring(4)}</h4>`;
+          } else if (para.startsWith('- ') || para.startsWith('• ')) {
+            const items = para.split('\n').map(line => {
+              const text = line.replace(/^[-•]\s*/, '');
+              return text ? `<li>${text}</li>` : '';
+            }).filter(Boolean).join('');
+            return `<ul>${items}</ul>`;
+          } else if (para.match(/^\d+\./)) {
+            const items = para.split('\n').map(line => {
+              const text = line.replace(/^\d+\.\s*/, '');
+              return text ? `<li>${text}</li>` : '';
+            }).filter(Boolean).join('');
+            return `<ol>${items}</ol>`;
+          } else if (para.startsWith('```')) {
+            const code = para.replace(/```/g, '');
+            return `<pre><code>${code}</code></pre>`;
+          } else if (para.trim().startsWith('**') || para.includes('Definition:') || para.includes('Key Concept:')) {
+            return `<div class="definition"><div class="definition-term">${para.replace(/\*\*/g, '')}</div></div>`;
+          } else if (para.includes('Example:') || para.includes('📌')) {
+            return `<div class="example"><div class="example-title">Example</div><p>${para.replace(/Example:|📌/g, '')}</p></div>`;
+          } else if (para.includes('Important:') || para.includes('Note:') || para.includes('⚠️')) {
+            return `<div class="callout"><div class="callout-title">Important</div><p>${para.replace(/Important:|Note:|⚠️/g, '')}</p></div>`;
+          } else if (para.match(/[=≠<>≤≥∑∫]/)) {
+            return `<div class="formula">${para}</div>`;
+          } else {
+            return `<p>${para}</p>`;
+          }
+        })
+        .join('\n');
+      
+      // Generate themed HTML
+      const generatedHtml = generateThemedHtml(
         activeNote.title,
-        activeNote.textContent || "",
-        activeNote.subject,
-        activeNote.color
+        formattedContent,
+        selectedTheme,
+        activeNote.subject
       );
       
       const updatedNotes = notes.map(n => {
@@ -223,6 +273,38 @@ export default function NotesPage() {
       setActiveNote({ ...activeNote, htmlContent: generatedHtml });
       setIsConverting(false);
     }, 1200);
+  };
+  
+  // Apply theme to existing HTML
+  const applyThemeToNote = (theme: Theme) => {
+    if (!activeNote || !activeNote.htmlContent) return;
+    
+    setIsConverting(true);
+    setTimeout(() => {
+      // Extract content from existing HTML or use text content
+      const content = activeNote.textContent
+        ? activeNote.textContent.split('\n\n').map((para: string) => `<p>${para}</p>`).join('\n')
+        : activeNote.htmlContent;
+      
+      const themedHtml = generateThemedHtml(
+        activeNote.title,
+        content,
+        theme,
+        activeNote.subject
+      );
+      
+      const updatedNotes = notes.map(n => {
+        if (n.id === activeNote.id) {
+          return { ...n, htmlContent: themedHtml };
+        }
+        return n;
+      });
+      
+      localStorage.setItem("studyforge_notes", JSON.stringify(updatedNotes));
+      setNotes(updatedNotes);
+      setActiveNote({ ...activeNote, htmlContent: themedHtml });
+      setIsConverting(false);
+    }, 800);
   };
 
   return (
@@ -599,9 +681,68 @@ export default function NotesPage() {
               ) : (
                 /* HTML guide viewer */
                 <div className="flex-1 relative flex flex-col h-full w-full">
-                  {/* Option to return back to Notes version */}
-                  <div className="h-10 bg-[#0E1626] border-b border-[#162035] px-6 flex items-center justify-between flex-shrink-0">
-                    <span className="text-xs text-[#7A9AB8] font-semibold tracking-wider uppercase">Interactive HTML Guide</span>
+                  {/* Option to return back to Notes version + Theme Selector */}
+                  <div className="h-12 bg-[#0E1626] border-b border-[#162035] px-6 flex items-center justify-between flex-shrink-0">
+                    <div className="flex items-center gap-4">
+                      <span className="text-xs text-[#7A9AB8] font-semibold tracking-wider uppercase">Interactive HTML Guide</span>
+                      
+                      {/* Theme Selector */}
+                      <div className="relative">
+                        <button
+                          onClick={() => setShowThemeSelector(!showThemeSelector)}
+                          className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#1C2C4E] hover:bg-[#253966] text-white text-[11px] font-bold transition-colors border border-[#253966]"
+                        >
+                          <Palette className="w-3.5 h-3.5" />
+                          {selectedTheme.preview} {selectedTheme.name}
+                        </button>
+                        
+                        {showThemeSelector && (
+                          <motion.div
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="absolute top-full left-0 mt-2 w-64 bg-[#1C2C4E] border border-[#253966] rounded-lg shadow-2xl z-50 overflow-hidden"
+                          >
+                            <div className="p-2 border-b border-[#253966]">
+                              <p className="text-[10px] text-[#7A9AB8] font-semibold uppercase tracking-wider px-2">Choose Theme</p>
+                            </div>
+                            <div className="max-h-80 overflow-y-auto p-2 space-y-1">
+                              {themes.map((theme) => (
+                                <button
+                                  key={theme.id}
+                                  onClick={() => {
+                                    setSelectedTheme(theme);
+                                    setShowThemeSelector(false);
+                                    if (activeNote?.htmlContent) {
+                                      applyThemeToNote(theme);
+                                    }
+                                  }}
+                                  className={`w-full text-left px-3 py-2.5 rounded-lg transition-all ${
+                                    selectedTheme.id === theme.id
+                                      ? 'bg-indigo-500/20 border border-indigo-500/40'
+                                      : 'hover:bg-[#253966] border border-transparent'
+                                  }`}
+                                >
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <span className="text-lg">{theme.preview}</span>
+                                    <span className="text-xs font-bold text-white">{theme.name}</span>
+                                    {selectedTheme.id === theme.id && (
+                                      <span className="ml-auto text-[10px] text-indigo-400">✓ Active</span>
+                                    )}
+                                  </div>
+                                  <p className="text-[10px] text-[#7A9AB8] leading-relaxed">{theme.description}</p>
+                                  <div className="flex gap-1 mt-2">
+                                    <div className="w-4 h-4 rounded-full" style={{ background: theme.colors.primary }}></div>
+                                    <div className="w-4 h-4 rounded-full" style={{ background: theme.colors.secondary }}></div>
+                                    <div className="w-4 h-4 rounded-full" style={{ background: theme.colors.accent }}></div>
+                                  </div>
+                                </button>
+                              ))}
+                            </div>
+                          </motion.div>
+                        )}
+                      </div>
+                    </div>
+                    
                     <button
                       onClick={() => setViewMode("text")}
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1C2C4E] hover:bg-[#253966] text-white text-[11px] font-bold transition-colors border border-[#253966]"
