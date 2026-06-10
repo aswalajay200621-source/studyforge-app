@@ -17,7 +17,7 @@ const updateNoteSchema = z.object({
 // GET a single note
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -29,9 +29,11 @@ export async function GET(
       );
     }
 
+    const { id } = await params;
+
     const note = await prisma.note.findFirst({
       where: {
-        id: params.id,
+        id,
         userId: session.user.id,
       },
     });
@@ -56,7 +58,7 @@ export async function GET(
 // PUT update a note
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -68,13 +70,14 @@ export async function PUT(
       );
     }
 
+    const { id } = await params;
     const body = await request.json();
     const validatedData = updateNoteSchema.parse(body);
 
     // Check if note exists and belongs to user
     const existingNote = await prisma.note.findFirst({
       where: {
-        id: params.id,
+        id,
         userId: session.user.id,
       },
     });
@@ -87,7 +90,7 @@ export async function PUT(
     }
 
     const note = await prisma.note.update({
-      where: { id: params.id },
+      where: { id },
       data: validatedData,
     });
 
@@ -111,7 +114,7 @@ export async function PUT(
 // DELETE a note
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -123,10 +126,12 @@ export async function DELETE(
       );
     }
 
+    const { id } = await params;
+
     // Check if note exists and belongs to user
     const existingNote = await prisma.note.findFirst({
       where: {
-        id: params.id,
+        id,
         userId: session.user.id,
       },
     });
@@ -139,7 +144,7 @@ export async function DELETE(
     }
 
     await prisma.note.delete({
-      where: { id: params.id },
+      where: { id },
     });
 
     return NextResponse.json(

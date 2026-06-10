@@ -18,7 +18,7 @@ const updateFlashcardSchema = z.object({
 // GET a single flashcard set
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -30,9 +30,11 @@ export async function GET(
       );
     }
 
+    const { id } = await params;
+
     const flashcard = await prisma.flashcard.findFirst({
       where: {
-        id: params.id,
+        id,
         userId: session.user.id,
       },
     });
@@ -57,7 +59,7 @@ export async function GET(
 // PUT update a flashcard set
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -69,12 +71,13 @@ export async function PUT(
       );
     }
 
+    const { id } = await params;
     const body = await request.json();
     const validatedData = updateFlashcardSchema.parse(body);
 
     const existingFlashcard = await prisma.flashcard.findFirst({
       where: {
-        id: params.id,
+        id,
         userId: session.user.id,
       },
     });
@@ -87,7 +90,7 @@ export async function PUT(
     }
 
     const flashcard = await prisma.flashcard.update({
-      where: { id: params.id },
+      where: { id },
       data: validatedData,
     });
 
@@ -111,7 +114,7 @@ export async function PUT(
 // DELETE a flashcard set
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -123,9 +126,11 @@ export async function DELETE(
       );
     }
 
+    const { id } = await params;
+
     const existingFlashcard = await prisma.flashcard.findFirst({
       where: {
-        id: params.id,
+        id,
         userId: session.user.id,
       },
     });
@@ -138,7 +143,7 @@ export async function DELETE(
     }
 
     await prisma.flashcard.delete({
-      where: { id: params.id },
+      where: { id },
     });
 
     return NextResponse.json(

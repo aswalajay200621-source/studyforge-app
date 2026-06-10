@@ -22,7 +22,7 @@ const updateQuizSchema = z.object({
 // GET a single quiz
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -34,9 +34,11 @@ export async function GET(
       );
     }
 
+    const { id } = await params;
+
     const quiz = await prisma.quiz.findFirst({
       where: {
-        id: params.id,
+        id,
         userId: session.user.id,
       },
     });
@@ -61,7 +63,7 @@ export async function GET(
 // PUT update a quiz
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -73,12 +75,13 @@ export async function PUT(
       );
     }
 
+    const { id } = await params;
     const body = await request.json();
     const validatedData = updateQuizSchema.parse(body);
 
     const existingQuiz = await prisma.quiz.findFirst({
       where: {
-        id: params.id,
+        id,
         userId: session.user.id,
       },
     });
@@ -91,7 +94,7 @@ export async function PUT(
     }
 
     const quiz = await prisma.quiz.update({
-      where: { id: params.id },
+      where: { id },
       data: validatedData,
     });
 

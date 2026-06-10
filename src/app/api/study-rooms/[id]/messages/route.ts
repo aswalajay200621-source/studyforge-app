@@ -11,7 +11,7 @@ const messageSchema = z.object({
 // GET messages for a study room
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -23,12 +23,14 @@ export async function GET(
       );
     }
 
+    const { id } = await params;
+
     // Check if user is a member of the room
     const member = await prisma.studyRoomMember.findUnique({
       where: {
         userId_roomId: {
           userId: session.user.id,
-          roomId: params.id,
+          roomId: id,
         },
       },
     });
@@ -42,7 +44,7 @@ export async function GET(
 
     const messages = await prisma.studyRoomMessage.findMany({
       where: {
-        roomId: params.id,
+        roomId: id,
       },
       orderBy: {
         createdAt: "asc",
@@ -63,7 +65,7 @@ export async function GET(
 // POST send a message to a study room
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -75,12 +77,14 @@ export async function POST(
       );
     }
 
+    const { id } = await params;
+
     // Check if user is a member of the room
     const member = await prisma.studyRoomMember.findUnique({
       where: {
         userId_roomId: {
           userId: session.user.id,
-          roomId: params.id,
+          roomId: id,
         },
       },
       include: {
@@ -104,7 +108,7 @@ export async function POST(
 
     const message = await prisma.studyRoomMessage.create({
       data: {
-        roomId: params.id,
+        roomId: id,
         userId: session.user.id,
         userName: member.user.name || "Anonymous",
         message: validatedData.message,

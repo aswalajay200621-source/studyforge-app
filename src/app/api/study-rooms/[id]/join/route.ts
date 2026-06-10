@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma";
 // POST join a study room
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -18,9 +18,11 @@ export async function POST(
       );
     }
 
+    const { id } = await params;
+
     // Check if room exists and is active
     const room = await prisma.studyRoom.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         _count: {
           select: {
@@ -57,7 +59,7 @@ export async function POST(
       where: {
         userId_roomId: {
           userId: session.user.id,
-          roomId: params.id,
+          roomId: id,
         },
       },
     });
@@ -83,7 +85,7 @@ export async function POST(
     await prisma.studyRoomMember.create({
       data: {
         userId: session.user.id,
-        roomId: params.id,
+        roomId: id,
         role: "member",
       },
     });
