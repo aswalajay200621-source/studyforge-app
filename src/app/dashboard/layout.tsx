@@ -27,6 +27,7 @@ import {
   ChevronDown,
   FolderOpen,
   Target,
+  Users,
 } from "lucide-react";
 
 const sidebarLinks = [
@@ -34,6 +35,7 @@ const sidebarLinks = [
   { href: "/dashboard/notes", icon: FileText, label: "Notes" },
   { href: "/dashboard/flashcards", icon: Layers, label: "Flashcards" },
   { href: "/dashboard/quiz", icon: Brain, label: "Quizzes" },
+  { href: "/dashboard/study-rooms", icon: Users, label: "Study Rooms" },
   { href: "/dashboard/upload", icon: Upload, label: "Upload PDF" },
 ];
 

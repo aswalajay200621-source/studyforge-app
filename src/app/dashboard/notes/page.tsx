@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Search, Bookmark, MoreVertical, FileText, ChevronDown, Upload, Download, Eye, X, BookOpen, Sparkles, RefreshCw } from "lucide-react";
+import { Plus, Search, Bookmark, MoreVertical, FileText, ChevronDown, Upload, Download, Eye, X, BookOpen, Sparkles, RefreshCw, Layers, Brain, Volume2, VolumeX, Pause, Play, SkipForward, SkipBack, Settings as SettingsIcon, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { convertHtmlToText, convertTextToHtml } from "@/lib/generator";
 
@@ -16,17 +16,48 @@ export default function NotesPage() {
   const [viewMode, setViewMode] = useState<"html" | "text">("text");
   const [isConverting, setIsConverting] = useState(false);
 
+  // Text-to-Speech states
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const [speechRate, setSpeechRate] = useState(1.0);
+  const [selectedVoice, setSelectedVoice] = useState<SpeechSynthesisVoice | null>(null);
+  const [availableVoices, setAvailableVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [showVoiceSettings, setShowVoiceSettings] = useState(false);
+  const [currentUtterance, setCurrentUtterance] = useState<SpeechSynthesisUtterance | null>(null);
+
   useEffect(() => {
     const storedNotes = localStorage.getItem("studyforge_notes");
     if (storedNotes) {
       setNotes(JSON.parse(storedNotes));
     }
+
+    // Load available voices for text-to-speech
+    const loadVoices = () => {
+      const voices = window.speechSynthesis.getVoices();
+      setAvailableVoices(voices);
+      if (voices.length > 0 && !selectedVoice) {
+        // Prefer English voices
+        const englishVoice = voices.find(v => v.lang.startsWith('en')) || voices[0];
+        setSelectedVoice(englishVoice);
+      }
+    };
+
+    loadVoices();
+    window.speechSynthesis.onvoiceschanged = loadVoices;
+
+    return () => {
+      // Cleanup: stop speech when component unmounts
+      window.speechSynthesis.cancel();
+    };
   }, []);
 
   // Whenever a note is opened, always default to the distraction-free Notes version (plain text)
   useEffect(() => {
     if (activeNote) {
       setViewMode("text");
+      
+      // Stop any ongoing speech when switching notes
+      stopSpeech();
       
       // Auto-extract textContent on-the-fly for any legacy notes that don't have it
       if (!activeNote.textContent && activeNote.htmlContent) {
@@ -41,8 +72,94 @@ export default function NotesPage() {
         setNotes(updatedNotes);
         setActiveNote({ ...activeNote, textContent: extractedText });
       }
+    } else {
+      // Stop speech when closing note
+      stopSpeech();
     }
   }, [activeNote]);
+
+  // Text-to-Speech Functions
+  const startSpeech = () => {
+    if (!activeNote?.textContent) return;
+
+    // Cancel any ongoing speech
+    window.speechSynthesis.cancel();
+
+    const utterance = new SpeechSynthesisUtterance(activeNote.textContent);
+    
+    if (selectedVoice) {
+      utterance.voice = selectedVoice;
+    }
+    
+    utterance.rate = speechRate;
+    utterance.pitch = 1.0;
+    utterance.volume = 1.0;
+
+    utterance.onend = () => {
+      setIsPlaying(false);
+      setIsPaused(false);
+    };
+
+    utterance.onerror = (event) => {
+      console.error('Speech synthesis error:', event);
+      setIsPlaying(false);
+      setIsPaused(false);
+    };
+
+    setCurrentUtterance(utterance);
+    window.speechSynthesis.speak(utterance);
+    setIsPlaying(true);
+    setIsPaused(false);
+  };
+
+  const pauseSpeech = () => {
+    if (window.speechSynthesis.speaking && !window.speechSynthesis.paused) {
+      window.speechSynthesis.pause();
+      setIsPaused(true);
+    }
+  };
+
+  const resumeSpeech = () => {
+    if (window.speechSynthesis.paused) {
+      window.speechSynthesis.resume();
+      setIsPaused(false);
+    }
+  };
+
+  const stopSpeech = () => {
+    window.speechSynthesis.cancel();
+    setIsPlaying(false);
+    setIsPaused(false);
+    setCurrentUtterance(null);
+  };
+
+  const togglePlayPause = () => {
+    if (!isPlaying) {
+      startSpeech();
+    } else if (isPaused) {
+      resumeSpeech();
+    } else {
+      pauseSpeech();
+    }
+  };
+
+  const changeSpeed = (newRate: number) => {
+    setSpeechRate(newRate);
+    if (isPlaying) {
+      // Restart with new speed
+      stopSpeech();
+      setTimeout(() => startSpeech(), 100);
+    }
+  };
+
+  const changeVoice = (voice: SpeechSynthesisVoice) => {
+    setSelectedVoice(voice);
+    if (isPlaying) {
+      // Restart with new voice
+      stopSpeech();
+      setTimeout(() => startSpeech(), 100);
+    }
+  };
 
   const subjects = ["All", ...Array.from(new Set(notes.map((n) => n.subject)))];
 
@@ -262,7 +379,7 @@ export default function NotesPage() {
       {/* Interactive Dual Format Note Viewer Modal */}
       <AnimatePresence>
         {activeNote && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -271,7 +388,7 @@ export default function NotesPage() {
             {/* Modal Header */}
             <div className="h-16 bg-[#06090F] border-b border-[#162035] px-6 flex items-center justify-between gap-4">
               <div className="flex items-center gap-3 min-w-0">
-                <button 
+                <button
                   onClick={() => setActiveNote(null)}
                   className="p-2 rounded-lg hover:bg-[#111B2E] text-[#7A9AB8] hover:text-white transition-colors flex-shrink-0"
                 >
@@ -286,8 +403,23 @@ export default function NotesPage() {
               </div>
 
               <div className="flex items-center gap-3 flex-shrink-0">
+                {/* Quick Access to Study Tools */}
+                <Link
+                  href="/dashboard/flashcards"
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg bg-violet-500/10 text-violet-400 hover:bg-violet-500/20 border border-violet-500/20 transition-colors text-xs font-bold"
+                  title="View Flashcards"
+                >
+                  <Layers className="w-4 h-4" /> Flashcards
+                </Link>
+                <Link
+                  href="/dashboard/quiz"
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 border border-amber-500/20 transition-colors text-xs font-bold"
+                  title="Take Quiz"
+                >
+                  <Brain className="w-4 h-4" /> Quiz
+                </Link>
                 {viewMode === "html" && activeNote.htmlContent && (
-                  <button 
+                  <button
                     onClick={() => downloadHtmlFile(activeNote)}
                     className="flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-500 transition-colors text-xs font-bold shadow-md shadow-emerald-950/20"
                   >
@@ -295,7 +427,7 @@ export default function NotesPage() {
                   </button>
                 )}
                 {viewMode === "text" && activeNote.textContent && (
-                  <button 
+                  <button
                     onClick={() => downloadTextFile(activeNote)}
                     className="flex items-center gap-2 px-4 py-2 rounded-lg text-white hover:opacity-90 transition-colors text-xs font-bold shadow-md"
                     style={{ background: "linear-gradient(135deg, #0EA5E9, #6366F1)" }}
@@ -303,7 +435,7 @@ export default function NotesPage() {
                     <Download className="w-4 h-4" /> Download .txt
                   </button>
                 )}
-                <button 
+                <button
                   onClick={() => setActiveNote(null)}
                   className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#111B2E] text-white hover:bg-[#162035] border border-[#1E2F4A] transition-colors text-xs font-bold"
                 >
@@ -328,6 +460,133 @@ export default function NotesPage() {
                     >
                       <Sparkles className="w-3.5 h-3.5 animate-pulse" /> HTML Version
                     </button>
+                  </div>
+
+                  {/* Audio Player Controls */}
+                  <div className="mb-6 glass rounded-xl p-4 border border-[#162035]">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <Volume2 className="w-5 h-5 text-emerald-400" />
+                        <span className="text-sm font-semibold text-white">Podcast Mode / Read Aloud</span>
+                      </div>
+                      <button
+                        onClick={() => setShowVoiceSettings(!showVoiceSettings)}
+                        className="p-2 rounded-lg hover:bg-[#111B2E] transition-colors"
+                        title="Voice Settings"
+                      >
+                        <SettingsIcon className="w-4 h-4 text-[#7A9AB8]" />
+                      </button>
+                    </div>
+
+                    {/* Voice Settings Panel */}
+                    {showVoiceSettings && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="mb-4 p-3 rounded-lg bg-[#0E1626] border border-[#162035]"
+                      >
+                        <div className="space-y-3">
+                          {/* Voice Selection */}
+                          <div>
+                            <label className="text-xs text-[#7A9AB8] mb-1 block">Voice</label>
+                            <select
+                              value={selectedVoice?.name || ''}
+                              onChange={(e) => {
+                                const voice = availableVoices.find(v => v.name === e.target.value);
+                                if (voice) changeVoice(voice);
+                              }}
+                              className="w-full px-3 py-2 rounded-lg bg-[#06090F] border border-[#162035] text-white text-xs focus:ring-2 focus:ring-emerald-500/20 focus:outline-none"
+                            >
+                              {availableVoices.map((voice) => (
+                                <option key={voice.name} value={voice.name}>
+                                  {voice.name} ({voice.lang})
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+
+                          {/* Speed Control */}
+                          <div>
+                            <div className="flex justify-between items-center mb-1">
+                              <label className="text-xs text-[#7A9AB8]">Speed</label>
+                              <span className="text-xs text-emerald-400 font-mono">{speechRate.toFixed(1)}x</span>
+                            </div>
+                            <input
+                              type="range"
+                              min="0.5"
+                              max="2.0"
+                              step="0.1"
+                              value={speechRate}
+                              onChange={(e) => changeSpeed(parseFloat(e.target.value))}
+                              className="w-full h-2 rounded-lg appearance-none cursor-pointer"
+                              style={{
+                                background: `linear-gradient(to right, #10B981 0%, #10B981 ${((speechRate - 0.5) / 1.5) * 100}%, #162035 ${((speechRate - 0.5) / 1.5) * 100}%, #162035 100%)`
+                              }}
+                            />
+                            <div className="flex justify-between text-[10px] text-[#7A9AB8] mt-1">
+                              <span>0.5x</span>
+                              <span>1.0x</span>
+                              <span>2.0x</span>
+                            </div>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+
+                    {/* Playback Controls */}
+                    <div className="flex items-center justify-center gap-3">
+                      <button
+                        onClick={stopSpeech}
+                        disabled={!isPlaying}
+                        className="p-2 rounded-lg hover:bg-[#111B2E] transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                        title="Stop"
+                      >
+                        <SkipBack className="w-5 h-5 text-[#7A9AB8]" />
+                      </button>
+
+                      <button
+                        onClick={togglePlayPause}
+                        className="p-4 rounded-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:opacity-90 transition-all shadow-lg shadow-emerald-950/40"
+                        title={!isPlaying ? "Play" : isPaused ? "Resume" : "Pause"}
+                      >
+                        {!isPlaying ? (
+                          <Play className="w-6 h-6 text-white ml-0.5" />
+                        ) : isPaused ? (
+                          <Play className="w-6 h-6 text-white ml-0.5" />
+                        ) : (
+                          <Pause className="w-6 h-6 text-white" />
+                        )}
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          stopSpeech();
+                          setTimeout(() => startSpeech(), 100);
+                        }}
+                        disabled={!isPlaying}
+                        className="p-2 rounded-lg hover:bg-[#111B2E] transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                        title="Restart"
+                      >
+                        <SkipForward className="w-5 h-5 text-[#7A9AB8]" />
+                      </button>
+
+                      {isPlaying && (
+                        <div className="ml-4 flex items-center gap-2">
+                          <div className="flex gap-1">
+                            <div className="w-1 h-4 bg-emerald-400 rounded-full animate-pulse" style={{ animationDelay: '0ms' }}></div>
+                            <div className="w-1 h-4 bg-emerald-400 rounded-full animate-pulse" style={{ animationDelay: '150ms' }}></div>
+                            <div className="w-1 h-4 bg-emerald-400 rounded-full animate-pulse" style={{ animationDelay: '300ms' }}></div>
+                          </div>
+                          <span className="text-xs text-emerald-400 font-medium">Playing...</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Info Text */}
+                    <p className="text-center text-xs text-[#7A9AB8] mt-3">
+                      {!isPlaying ? "Listen to your notes as a podcast while studying" : isPaused ? "Paused - Click play to resume" : "Now reading your notes aloud"}
+                    </p>
                   </div>
                   
                   <pre

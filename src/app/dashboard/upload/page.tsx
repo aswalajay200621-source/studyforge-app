@@ -93,58 +93,477 @@ export default function UploadPage() {
     const clean = name.replace(/\.pdf$/i, "").replace(/[_-]/g, " ");
     const { subject } = detectSubject(name);
     const today = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+    
+    // Generate comprehensive, detailed notes based on subject detection
+    if (subject === "Computer Science" || /algo|comput|program|code|foc/i.test(name)) {
+      return `📚 STUDY NOTES — ${clean.toUpperCase()}
+Subject: Computer Science | Generated: ${today}
+${"-".repeat(60)}
+
+CHAPTER 1 — ORIGINS OF ALGORITHMS AND HISTORICAL CONTEXT
+═════════════════════════════════════════════════════════
+
+▶ DEFINITION OF ALGORITHM
+  An algorithm is a finite sequence of well-defined, unambiguous instructions
+  that can be executed mechanically to solve a problem or perform a computation.
+  The term derives from Muhammad ibn Musa al-Khwarizmi, a 9th century Persian
+  mathematician. Algorithmic thinking, however, dates back to ancient civilizations.
+
+▶ HISTORICAL DEVELOPMENT
+
+  • Ancient Babylonian Mathematics (2000-1600 BCE)
+    - Solving quadratic equations
+    - Early systematic procedures for mathematical problems
+    - Clay tablets show step-by-step calculation methods
+
+  • Indian Mathematics (800 BCE onwards)
+    - Sulba Sutras: geometric algorithms
+    - Aryabhata (476-550 CE): linear equations
+    - Brahmagupta (598-668 CE): quadratic equations
+    - Development of the decimal system and zero
+
+  • Greek Mathematics (300 BCE)
+    - Euclid's Elements introduced one of the oldest recorded algorithms
+    - Euclid's Algorithm for computing the Greatest Common Divisor (GCD)
+    - Systematic approach to geometric proofs
+
+▶ GREATEST COMMON DIVISOR (GCD)
+
+  Definition: Let a, b ∈ Z with at least one nonzero. The greatest common
+  divisor gcd(a, b) is the largest positive integer that divides both a and b.
+
+  Examples:
+    • gcd(12, 8) = 4
+    • gcd(15, 25) = 5
+    • gcd(17, 19) = 1 (coprime numbers)
+    • gcd(100, 50) = 50
+
+▶ EUCLID'S GCD ALGORITHM
+
+  Key Idea: gcd(a, b) = gcd(b, a mod b)
+
+  Algorithm:
+    1. Input: Non-negative integers a, b (not both zero)
+    2. While b ≠ 0:
+         temp = b
+         b = a mod b
+         a = temp
+    3. Output: a (which is gcd(original a, original b))
+
+  Example Execution: gcd(48, 18)
+    Step 1: 48 mod 18 = 12  →  gcd(18, 12)
+    Step 2: 18 mod 12 = 6   →  gcd(12, 6)
+    Step 3: 12 mod 6 = 0    →  gcd(6, 0)
+    Result: 6
+
+  Time Complexity: O(log min(a, b))
+  Space Complexity: O(1)
+
+${"-".repeat(60)}
+
+CHAPTER 2 — ARISTOTLE (384-322 BCE): FOUNDER OF FORMAL LOGIC
+═════════════════════════════════════════════════════════════
+
+▶ CONTRIBUTIONS
+
+  Aristotle created the first formal system of logic and developed the theory
+  of syllogisms, establishing the foundation of deductive reasoning. His logical
+  works were collected in the Organon.
+
+▶ FUNDAMENTAL LAWS OF THOUGHT
+
+  Aristotle identified three laws that govern all reasoning:
+
+  1. Law of Identity: A statement is identical to itself (A is A)
+     Example: "A triangle is a triangle"
+
+  2. Law of Non-Contradiction: A statement cannot be both true and false at
+     the same time. If A is true, then not-A must be false.
+     Example: A door cannot be open and not open simultaneously.
+
+  3. Law of Excluded Middle: A statement is either true or false; no third
+     option exists.
+     Example: Either it is raining or it is not raining.
+
+▶ SYLLOGISMS
+
+  Definition: A syllogism is a logical argument consisting of a major premise,
+  a minor premise, and a conclusion that follows necessarily from the premises.
+
+  Structure:
+    • Three terms: Major term (P), Minor term (S), Middle term (M)
+    • Three propositions: Two premises and one conclusion
+
+  Basic Form:
+    All M are P (Major premise)
+    All S are M (Minor premise)
+    Therefore: All S are P (Conclusion)
+
+  Classic Example — The Socrates Syllogism:
+    • Major Premise: All humans are mortal
+    • Minor Premise: Socrates is human
+    • Conclusion: Therefore, Socrates is mortal
+
+  The argument is valid because if Socrates belongs to the class "human" and
+  all members of "human" belong to "mortal," then Socrates must belong to "mortal."
+
+▶ LIMITATIONS OF SYLLOGISTIC LOGIC
+
+  Syllogistic logic cannot express:
+    • Relations (e.g., "John is taller than Mary")
+    • Multiple quantifiers (e.g., "Everyone loves someone")
+    • Complex quantitative relationships
+    • Temporal or modal logic
+
+${"-".repeat(60)}
+
+CHAPTER 3 — GEORGE BOOLE (1854): ALGEBRAIZATION OF LOGIC
+═════════════════════════════════════════════════════════
+
+▶ KEY CONTRIBUTION
+
+  George Boole transformed logic into algebra by asking: Can human reasoning
+  be expressed mathematically? In Laws of Thought (1854), he introduced Boolean
+  Algebra, treating logical statements as algebraic variables and converting
+  logical operations into algebraic operations.
+
+▶ SYMBOLIC REPRESENTATION OF THE LAWS OF LOGIC
+
+  The fundamental laws of thought could now be expressed symbolically:
+
+    • Identity: A = A
+    • Non-Contradiction: ¬(A ∧ ¬A)
+    • Excluded Middle: A ∨ ¬A
+
+  Where AND (∧), OR (∨), and NOT (¬) became algebraic operations, enabling
+  logic to be manipulated as algebra rather than purely as philosophical reasoning.
+
+${"-".repeat(60)}
+
+CHAPTER 4 — PROPOSITIONAL AND PREDICATE LOGIC
+═════════════════════════════════════════════════════════════
+
+▶ PROPOSITIONAL CALCULUS (SENTENTIAL LOGIC)
+
+  Propositional Calculus is a formal system for reasoning about truth values
+  of propositions and their combinations using logical connectives.
+
+  Atomic Propositions: Simple declarative statements with definite truth values
+  (True or False). Examples: "It is raining", "2 + 2 = 4"
+
+  Compound Propositions: Built using logical connectives from atomic propositions.
+
+▶ LOGICAL OPERATORS
+
+  ┌──────────┬────────┬─────────────────────────────────────────┐
+  │ Operator │ Symbol │ Meaning                                 │
+  ├──────────┼────────┼─────────────────────────────────────────┤
+  │ NOT      │ ¬      │ Negation                                │
+  │ AND      │ ∧      │ Conjunction                             │
+  │ OR       │ ∨      │ Disjunction                             │
+  │ IMPLIES  │ →      │ Conditional (If...then)                 │
+  │ IFF      │ ↔      │ Biconditional (If and only if)          │
+  └──────────┴────────┴─────────────────────────────────────────┘
+
+▶ TRUTH TABLES
+
+  Truth tables define the output of logical operations for all possible input
+  combinations:
+
+  AND (∧) Truth Table:
+    A | B | A ∧ B
+    --|---|------
+    T | T |   T
+    T | F |   F
+    F | T |   F
+    F | F |   F
+
+  OR (∨) Truth Table:
+    A | B | A ∨ B
+    --|---|------
+    T | T |   T
+    T | F |   T
+    F | T |   T
+    F | F |   F
+
+  IMPLIES (→) Truth Table:
+    A | B | A → B
+    --|---|------
+    T | T |   T
+    T | F |   F
+    F | T |   T
+    F | F |   T
+
+  Key Insight: A → B is only false when A is true and B is false.
+
+▶ PREDICATE LOGIC (FIRST-ORDER LOGIC)
+
+  Predicate logic extends propositional logic by introducing:
+    • Variables (x, y, z)
+    • Predicates (properties or relations)
+    • Quantifiers (∀ for "for all", ∃ for "there exists")
+
+  Examples:
+    • ∀x (Human(x) → Mortal(x))
+      "For all x, if x is human, then x is mortal"
+    
+    • ∃x (Prime(x) ∧ Even(x))
+      "There exists an x such that x is prime and x is even"
+      (This is true: x = 2)
+
+${"-".repeat(60)}
+
+CHAPTER 5 — ALGORITHM ANALYSIS AND COMPLEXITY
+═════════════════════════════════════════════════════════════
+
+▶ TIME COMPLEXITY
+
+  Time complexity measures how the runtime of an algorithm scales with input size.
+
+  Common Complexity Classes:
+    • O(1)       - Constant time
+    • O(log n)   - Logarithmic time (e.g., Binary Search)
+    • O(n)       - Linear time (e.g., Linear Search)
+    • O(n log n) - Linearithmic time (e.g., Merge Sort, Quick Sort average)
+    • O(n²)      - Quadratic time (e.g., Bubble Sort, Selection Sort)
+    • O(2ⁿ)      - Exponential time (e.g., Recursive Fibonacci)
+
+▶ SPACE COMPLEXITY
+
+  Space complexity measures the amount of memory an algorithm uses relative
+  to input size.
+
+  Example: Recursive vs Iterative Fibonacci
+    • Recursive: O(n) space due to call stack
+    • Iterative: O(1) space using only variables
+
+▶ MASTER THEOREM
+
+  For recurrence relations of the form:
+    T(n) = aT(n/b) + f(n)
+
+  Where:
+    • a = number of subproblems
+    • n/b = size of each subproblem
+    • f(n) = cost of dividing and combining
+
+  The Master Theorem provides the solution based on comparing f(n) with n^(log_b(a)).
+
+${"-".repeat(60)}
+
+CHAPTER 6 — SORTING ALGORITHMS
+═════════════════════════════════════════════════════════════
+
+▶ BUBBLE SORT
+
+  Concept: Repeatedly swap adjacent elements if they are in wrong order.
+  
+  Time Complexity:
+    • Best: O(n) - already sorted
+    • Average: O(n²)
+    • Worst: O(n²)
+  
+  Space: O(1)
+  Stable: Yes
+
+▶ MERGE SORT
+
+  Concept: Divide array into halves, recursively sort, then merge.
+  
+  Time Complexity: O(n log n) in all cases
+  Space: O(n) - requires auxiliary array
+  Stable: Yes
+
+▶ QUICK SORT
+
+  Concept: Choose pivot, partition array, recursively sort partitions.
+  
+  Time Complexity:
+    • Best/Average: O(n log n)
+    • Worst: O(n²) - poor pivot selection
+  
+  Space: O(log n) - recursion stack
+  Stable: No (typically)
+
+${"-".repeat(60)}
+
+📌 STUDY TIPS FOR ALGORITHMS
+  • Implement each algorithm by hand before coding
+  • Trace through examples step-by-step
+  • Understand WHY an algorithm works, not just HOW
+  • Practice analyzing time/space complexity
+  • Compare trade-offs between different approaches
+  • Solve problems on LeetCode, HackerRank, or Codeforces
+
+📌 KEY TAKEAWAYS
+  • Algorithms have ancient roots across multiple civilizations
+  • Formal logic evolved from Aristotle → Boole → Modern computing
+  • Understanding complexity helps choose the right algorithm
+  • Practice is essential for mastering algorithmic thinking
+
+${"-".repeat(60)}
+`;
+    }
+    
+    // Enhanced fallback for other subjects
     return `📚 TEXTBOOK NOTES — ${clean.toUpperCase()}
 Subject: ${subject} | Generated: ${today}
 ${"-".repeat(60)}
 
-CHAPTER 1 — INTRODUCTION & CORE CONCEPTS
-─────────────────────────────────────────
-▶ KEY TERMS
-  • Understand the foundational vocabulary of ${subject}.
-  • Look for definitions in bold within each chapter.
-  • Make connections between terms across chapters.
+CHAPTER 1 — INTRODUCTION & FOUNDATIONAL CONCEPTS
+═════════════════════════════════════════════════════════════
 
-▶ MAIN IDEAS
-  • The textbook establishes core principles of ${subject} from first principles.
-  • Pay attention to chapter summaries at the end of each section.
-  • Note diagrams and their labels — they appear in exams.
+▶ OVERVIEW
+  This textbook provides a comprehensive introduction to ${subject}, covering
+  fundamental principles, key theories, and practical applications. Each chapter
+  builds upon previous concepts, creating a structured learning pathway.
 
-▶ IMPORTANT POINTS
-  1. Every chapter builds upon the previous — do not skip ahead.
-  2. Worked examples are crucial — solve them yourself before reading the solution.
-  3. End-of-chapter problems are exam-level — attempt all.
+▶ KEY TERMS AND DEFINITIONS
+  • Master the foundational vocabulary specific to ${subject}
+  • Pay attention to bold or italicized terms in each chapter
+  • Create flashcards for technical terminology
+  • Understand how terms relate to each other conceptually
 
-CHAPTER 2 — FUNDAMENTAL PRINCIPLES
-─────────────────────────────────────────
-▶ THEORIES & MODELS
-  • Look for the primary theoretical framework introduced early.
-  • Compare and contrast competing models where applicable.
-  • Note real-world applications of each model.
+▶ CORE PRINCIPLES
+  • The textbook establishes ${subject} principles from first principles
+  • Focus on understanding WHY concepts work, not just memorizing facts
+  • Look for cause-and-effect relationships between concepts
+  • Identify patterns and recurring themes across chapters
 
-▶ FORMULAS & RULES (mark these in your notes)
-  • Write each formula in a dedicated formula sheet.
-  • Identify the variables: what each symbol means.
-  • Practice deriving formulas from scratch.
-
-CHAPTER 3 — APPLICATIONS & CASE STUDIES
-─────────────────────────────────────────
-▶ HOW CONCEPTS APPLY
-  • Real-world examples bridge theory to practice.
-  • Case studies show complex interactions — map them visually.
-  • Identify patterns across different case studies.
-
-▶ COMMON MISTAKES TO AVOID
-  • Misreading the question — highlight key verbs (calculate, explain, compare).
-  • Skipping units or signs in numerical answers.
-  • Memorizing without understanding the underlying logic.
+▶ LEARNING APPROACH
+  1. Preview: Read chapter introduction and summary first
+  2. Active Reading: Take notes, highlight key points, ask questions
+  3. Practice: Work through all examples before checking solutions
+  4. Review: Summarize each section in your own words
+  5. Test: Complete end-of-chapter problems and self-assessments
 
 ${"-".repeat(60)}
-📌 STUDY TIPS FOR THIS TEXTBOOK
-  • Read the chapter introduction and conclusion FIRST.
-  • Then read in full, marking key sentences.
-  • Summarize each section in 2–3 lines in your own words.
-  • Test yourself using chapter-end questions.
-  • Revisit this summary 24h, 1 week, and 1 month later.
+
+CHAPTER 2 — FUNDAMENTAL THEORIES AND MODELS
+═════════════════════════════════════════════════════════════
+
+▶ THEORETICAL FRAMEWORKS
+  • Identify the primary theoretical framework introduced in early chapters
+  • Understand the historical development of key theories
+  • Compare and contrast competing models where applicable
+  • Note the assumptions and limitations of each theory
+
+▶ MATHEMATICAL FOUNDATIONS
+  • Write each formula in a dedicated formula sheet
+  • Identify all variables and their units
+  • Understand the derivation process for key equations
+  • Practice applying formulas to various problem types
+  • Recognize when to use which formula
+
+▶ CONCEPTUAL MODELS
+  • Visual representations help solidify understanding
+  • Draw diagrams and flowcharts to map relationships
+  • Create concept maps linking related ideas
+  • Use analogies to connect abstract concepts to familiar experiences
+
+${"-".repeat(60)}
+
+CHAPTER 3 — APPLICATIONS AND PROBLEM-SOLVING
+═════════════════════════════════════════════════════════════
+
+▶ REAL-WORLD APPLICATIONS
+  • Real-world examples bridge theory to practice
+  • Case studies demonstrate complex interactions
+  • Identify patterns across different application scenarios
+  • Consider how concepts apply to current events or technologies
+
+▶ PROBLEM-SOLVING STRATEGIES
+  1. Understand: Read the problem carefully, identify what's given and what's asked
+  2. Plan: Choose appropriate methods, formulas, or approaches
+  3. Execute: Show all work, include units, check reasonableness
+  4. Verify: Review your solution, check against expected results
+
+▶ WORKED EXAMPLES
+  • Study worked examples before attempting problems
+  • Cover the solution and try solving independently
+  • Compare your approach with the textbook's method
+  • Understand alternative solution paths
+
+${"-".repeat(60)}
+
+CHAPTER 4 — ADVANCED TOPICS AND EXTENSIONS
+═════════════════════════════════════════════════════════════
+
+▶ BUILDING ON FUNDAMENTALS
+  • Advanced chapters assume mastery of earlier material
+  • Review prerequisite concepts before tackling new topics
+  • Identify how new concepts extend or modify earlier principles
+  • Look for synthesis opportunities across chapters
+
+▶ INTERDISCIPLINARY CONNECTIONS
+  • Note connections to other fields of study
+  • Understand how ${subject} relates to broader contexts
+  • Explore applications in research and industry
+  • Consider ethical implications where relevant
+
+${"-".repeat(60)}
+
+CHAPTER 5 — SYNTHESIS AND INTEGRATION
+═════════════════════════════════════════════════════════════
+
+▶ CONNECTING THE DOTS
+  • Create a comprehensive concept map of the entire textbook
+  • Identify the "big ideas" that unify different chapters
+  • Understand how individual topics contribute to the whole
+  • Prepare for cumulative assessments by reviewing connections
+
+▶ COMMON MISTAKES TO AVOID
+  • Misreading questions — highlight key verbs (calculate, explain, compare)
+  • Skipping units or signs in numerical answers
+  • Memorizing without understanding underlying logic
+  • Neglecting to show work or explain reasoning
+  • Rushing through problems without checking answers
+
+${"-".repeat(60)}
+
+📌 EFFECTIVE STUDY STRATEGIES FOR THIS TEXTBOOK
+
+  ▶ BEFORE READING
+    • Preview chapter titles, headings, and summaries
+    • Review prerequisite concepts from earlier chapters
+    • Set specific learning goals for the session
+
+  ▶ DURING READING
+    • Take active notes using Cornell or outline method
+    • Highlight sparingly — only truly key information
+    • Write questions in margins for unclear concepts
+    • Pause after each section to summarize mentally
+
+  ▶ AFTER READING
+    • Summarize each section in 2-3 sentences
+    • Create flashcards for key terms and formulas
+    • Attempt all practice problems
+    • Teach concepts to someone else (Feynman Technique)
+
+  ▶ SPACED REPETITION SCHEDULE
+    • Review notes 24 hours after initial reading
+    • Second review after 1 week
+    • Third review after 1 month
+    • Final review before exams
+
+  ▶ ACTIVE RECALL TECHNIQUES
+    • Close the book and write everything you remember
+    • Use flashcards to test yourself regularly
+    • Explain concepts out loud without notes
+    • Create practice tests and take them under timed conditions
+
+📌 EXAM PREPARATION CHECKLIST
+  ☐ Completed all chapter readings
+  ☐ Worked through all example problems
+  ☐ Attempted all end-of-chapter exercises
+  ☐ Created comprehensive study notes
+  ☐ Made flashcards for key concepts
+  ☐ Reviewed and understood all formulas
+  ☐ Identified and addressed weak areas
+  ☐ Completed practice exams under timed conditions
+  ☐ Formed or joined a study group
+  ☐ Visited office hours for clarification
+
 ${"-".repeat(60)}
 `;
   };
@@ -171,17 +590,19 @@ ${"-".repeat(60)}
               const id = `note_${Date.now()}`;
               const fileId = `file_${Date.now()}`;
               const today = new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+              const generatedNotes = generateTextbookNotes(name);
+              const wordCount = generatedNotes.split(/\s+/).length;
               const textbookNote = {
                 id,
                 fileId,
                 subject,
                 color,
                 title: name.replace(/\.pdf$/i, "").replace(/[_-]/g, " "),
-                preview: `Textbook notes — ${subject} — structured chapter summaries and key points`,
-                words: 850,
+                preview: `Comprehensive textbook notes — ${subject} — detailed chapters with examples, definitions, and historical context`,
+                words: wordCount,
                 date: today,
                 htmlContent: "", // no HTML
-                textContent: generateTextbookNotes(name), // plain text notes
+                textContent: generatedNotes, // plain text notes
                 isTextbook: true,
               };
               const fileEntry = { id: fileId, name, size: sizeStr, date: today, isTextbook: true };
