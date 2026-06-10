@@ -2,11 +2,25 @@ import { NextResponse } from 'next/server';
 import { HfInference } from '@huggingface/inference';
 import OpenAI from 'openai';
 
-// Initialize AI clients
-const hf = new HfInference(process.env.HUGGINGFACE_API_KEY);
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Initialize AI clients lazily to avoid build errors
+let hf: HfInference | null = null;
+let openai: OpenAI | null = null;
+
+function getHfClient() {
+  if (!hf && process.env.HUGGINGFACE_API_KEY) {
+    hf = new HfInference(process.env.HUGGINGFACE_API_KEY);
+  }
+  return hf;
+}
+
+function getOpenAIClient() {
+  if (!openai && process.env.OPENAI_API_KEY) {
+    openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+  }
+  return openai;
+}
 
 // POST endpoint to process PDF and generate notes
 export async function POST(request: Request) {
@@ -82,6 +96,11 @@ export async function POST(request: Request) {
 
 // Generate notes using OpenAI GPT-4
 async function generateNotesWithOpenAI(text: string, fileName: string): Promise<string> {
+  const client = getOpenAIClient();
+  if (!client) {
+    throw new Error('OpenAI client not available');
+  }
+
   const prompt = `You are an expert educational content creator. Generate comprehensive, detailed study notes from the following PDF content.
 
 PDF Title: ${fileName}
@@ -99,7 +118,7 @@ Create detailed notes with:
 Format the notes in a clear, structured manner with proper headings, bullet points, and emphasis on important terms.
 Aim for 3000-5000 words of comprehensive content.`;
 
-  const completion = await openai.chat.completions.create({
+  const completion = await client.chat.completions.create({
     model: 'gpt-4-turbo-preview',
     messages: [
       {
@@ -121,6 +140,11 @@ Aim for 3000-5000 words of comprehensive content.`;
 // Generate notes using HuggingFace (free alternative)
 async function generateNotesWithHuggingFace(text: string, fileName: string): Promise<string> {
   try {
+    const client = getHfClient();
+    if (!client) {
+      return generateNotesFromTemplate(text, fileName);
+    }
+
     const prompt = `Generate comprehensive study notes from this educational content:
 
 Title: ${fileName}
@@ -128,7 +152,7 @@ Content: ${text.substring(0, 2000)}
 
 Create detailed notes with clear sections, key concepts, definitions, and examples. Make it comprehensive and educational.`;
 
-    const response = await hf.textGeneration({
+    const response = await client.textGeneration({
       model: 'mistralai/Mistral-7B-Instruct-v0.2',
       inputs: prompt,
       parameters: {
@@ -216,7 +240,12 @@ Estimated Reading Time: ${Math.ceil(text.split(/\s+/).length / 200)} minutes
 async function generateFlashcards(text: string, useOpenAI: boolean): Promise<any[]> {
   if (useOpenAI && process.env.OPENAI_API_KEY) {
     try {
-      const completion = await openai.chat.completions.create({
+      const client = getOpenAIClient();
+      if (!client) {
+        throw new Error('OpenAI client not available');
+      }
+
+      const completion = await client.chat.completions.create({
         model: 'gpt-3.5-turbo',
         messages: [
           {
@@ -252,7 +281,12 @@ async function generateFlashcards(text: string, useOpenAI: boolean): Promise<any
 async function generateQuizQuestions(text: string, useOpenAI: boolean): Promise<any[]> {
   if (useOpenAI && process.env.OPENAI_API_KEY) {
     try {
-      const completion = await openai.chat.completions.create({
+      const client = getOpenAIClient();
+      if (!client) {
+        throw new Error('OpenAI client not available');
+      }
+
+      const completion = await client.chat.completions.create({
         model: 'gpt-3.5-turbo',
         messages: [
           {

@@ -19,8 +19,7 @@ const updateFlashcardSchema = z.object({
 export async function GET(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
-) {
-  const params = await context.params;
+): Promise<NextResponse> {
   try {
     const session = await getServerSession(authOptions);
 
@@ -30,6 +29,8 @@ export async function GET(
         { status: 401 }
       );
     }
+
+    const params = await context.params;
 
     const flashcard = await prisma.flashcard.findFirst({
       where: {
@@ -59,7 +60,7 @@ export async function GET(
 export async function PUT(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
-) {
+): Promise<NextResponse> {
   try {
     const session = await getServerSession(authOptions);
 
@@ -114,7 +115,7 @@ export async function PUT(
 export async function DELETE(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
-) {
+): Promise<NextResponse> {
   try {
     const session = await getServerSession(authOptions);
 
